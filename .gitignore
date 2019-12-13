@@ -1,0 +1,6 @@
+*.exe
+*.db
+*.exe~
+.idea/
+swagger/
+logs/
