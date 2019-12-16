@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/config"
 	"github.com/astaxie/beego/logs"
 	"github.com/beego/i18n"
 
@@ -24,6 +25,11 @@ func init() {
 	// init db
 	initDB()
 
+	// init config
+	initConfig()
+
+	// init genesis
+	initGenesis()
 }
 
 func initLogger() {
@@ -61,4 +67,20 @@ func initCatch() {
 
 func initDB() {
 	core.InitSqlite()
+}
+
+func initConfig() {
+	appConfig, err := config.NewConfig("json", "conf/config.json")
+	if err != nil {
+		logs.Error(err)
+	}
+	logs.Info(appConfig.String("port"))
+}
+
+func initGenesis() {
+	genesisBlock, err := config.NewConfig("json", "conf/genesisBlock.json")
+	if err != nil {
+		logs.Error(err)
+	}
+	logs.Info(genesisBlock.String("version"))
 }
