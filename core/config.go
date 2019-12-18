@@ -10,8 +10,12 @@ var (
 	appConfig    config.Configer
 	genesisBlock models.Block
 )
+func init(){
+	initConfig()
+	initGenesisBlock()
+}
 
-func InitConfig() {
+func initConfig() {
 	conf, err := config.NewConfig("json", "conf/config.json")
 	if err != nil {
 		logs.Error(err)
@@ -22,10 +26,10 @@ func InitConfig() {
 	logs.Info("【Init】 config ok!")
 }
 
-func InitGenesisBlock() {
+func initGenesisBlock() {
 	genesis, err := config.NewConfig("json", "conf/genesisBlock.json")
 	if err != nil {
-		logs.Error("【Init】 genesisBlock err! ", err)
+		logs.Error("【Init】 genesisBlock err! ==>", err)
 		return
 	}
 

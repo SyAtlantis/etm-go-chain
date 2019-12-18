@@ -15,7 +15,7 @@ import (
 
 var cc cache.Cache
 
-func InitRedis() {
+func init() {
 	var err error
 
 	defer func() {
