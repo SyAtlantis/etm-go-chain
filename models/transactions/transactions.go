@@ -1,5 +1,0 @@
-package transactions
-
-func init() {
-
-}

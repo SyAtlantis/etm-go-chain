@@ -25,14 +25,14 @@ func InitSqlite() {
 	orm.DefaultTimeLoc = time.UTC
 
 	if err != nil {
-		logs.Error("Init sqlite3 database failure! ==>", err)
+		logs.Error("【Init】 sqlite3 database failure! ==>", err)
 		return
 	}
 
-	logs.Info("Init sqlite3 database ok!")
+	logs.Info("【Init】 sqlite3 database ok!")
 }
 
-func Create(md interface{}) (int64, error) {
+func Insert(md interface{}) (int64, error) {
 	return orm.NewOrm().Insert(md)
 }
 

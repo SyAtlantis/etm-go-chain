@@ -1,88 +1,74 @@
 package models
 
 import (
-	"github.com/astaxie/beego/orm"
-
-	_ "workspace/etm-go-chain/models/accounts"
-	_ "workspace/etm-go-chain/models/blocks"
-	_ "workspace/etm-go-chain/models/peers"
-	_ "workspace/etm-go-chain/models/system"
-	_ "workspace/etm-go-chain/models/transactions"
+	"github.com/astaxie/beego/config"
 )
 
-type Peer struct {
-	Id      int    `json:"id" orm:"pk;auto"`
-	Ip      string `json:"ip"`
-	Port    int64  `json:"port"`
-	State   int    `json:"state"`
-	Version string `json:"version"`
+var modelList = make(map[string]interface{})
+
+type Models interface {
+	NewModel() interface{}
 }
 
-type Account struct {
-	Address   string    `json:"address" orm:"pk"`
-	PublicKey string    `json:"publicKey"`
-	Balance   int64     `json:"balance"`
-	Rewards   int64     `json:"rewards"`
-	Bonus     int64     `json:"bonus"`
-	Delegate  *Delegate `json:"delegate" orm:"rel(fk);null;column(delegate)"`
-	Vote      *Vote     `json:"vote" orm:"rel(fk);null;column(vote)"`
+func RegisterModels(name string, model Models) {
+	modelList[name] = model.NewModel()
 }
 
-type Delegate struct {
-	Username       string  `json:"username" orm:"pk"`
-	Rate           int     `json:"rate"`
-	Votes          int64   `json:"votes"`
-	Voters         []*Vote `json:"voters" orm:"reverse(many)"`
-	ProducedBlocks int64   `json:"producedBlocks"`
-	MissedBlocks   int64   `json:"missedBlocks"`
+func GetModels() map[string]interface{} {
+	return modelList
 }
 
-type Vote struct {
-	TransactionId string    `json:"transactionId" orm:"pk;column(transactionId)"`
-	Votes         int64     `json:"votes"`
-	Delegate      *Delegate `json:"delegate" orm:"rel(fk);column(delegate)"`
-	Locks         []*Lock   `json:"locks" orm:"rel(m2m)"`
-}
-type Lock struct {
-	TransactionId string `json:"transactionId" orm:"pk;column(transactionId)"`
-	LockAmount    int64  `json:"lockAmount"`
-	OriginHeight  int64  `json:"originHeight"`
-	CurrentHeight int64  `json:"currentHeight"`
-	Votes         int64  `json:"votes"`
-	State         int    `json:"state"`
+func GetModel(name string) interface{} {
+	return modelList[name]
 }
 
-type Block struct {
-	Id                   string         `json:"id" orm:"pk"`
-	Height               int64          `json:"height"`
-	Timestamp            int64          `json:"timestamp"`
-	TotalAmount          int64          `json:"totalAmount" orm:"column(totalAmount)"`
-	TotalFee             int64          `json:"totalFee" orm:"column(totalFee)"`
-	Reward               int64          `json:"reward"`
-	PayloadHash          string         `json:"payloadHash" orm:"column(payloadHash)"`
-	PayloadLength        int            `json:"payloadLength" orm:"column(payloadLength)"`
-	PreviousBlock        string         `json:"previousBlock" orm:"column(previousBlock)"`
-	Generator            *Delegate      `json:"generator" orm:"rel(fk);column(generator)"`
-	BlockSignature       string         `json:"blockSignature" orm:"column(blockSignature)"`
-	NumberOfTransactions int            `json:"numberOfTransactions" orm:"column(numberOfTransactions)"`
-	Transactions         []*Transaction `json:"transactions" orm:"reverse(many)"`
+func (b *Block) Transform(c config.Configer) {
+	var err error
+	b.Id = c.String("id")
+	b.Height, err = c.Int64("height")
+	b.Timestamp, err = c.Int64("timestamp")
+	b.TotalAmount, err = c.Int64("totalAmount")
+	b.TotalFee, err = c.Int64("totalFee")
+	b.Reward, err = c.Int64("reward")
+	b.PayloadHash = c.String("payloadHash")
+	b.PayloadLength, err = c.Int("payloadLength")
+	b.PreviousBlock = c.String("previousBlock")
+	b.BlockSignature = c.String("blockSignature")
+	b.NumberOfTransactions, err = c.Int("numberOfTransactions")
+	b.Generator = &Delegate{
+		Username: c.String("generatorPublicKey"),
+	}
+	var transactions []*Transaction
+	trs, err := c.DIY("transactions")
+	if err != nil {
+		return
+	}
+	for _, tr := range trs.([]interface{}) {
+		t := Transaction{}
+		t.Transform(tr.(map[string]interface{}))
+		transactions = append(transactions, &t)
+	}
+	b.Transactions = transactions
 }
 
-type Transaction struct {
-	Id        string `json:"id" orm:"pk"`
-	Type      uint8  `json:"type"`
-	BlockId   *Block `json:"blockId" orm:"rel(fk);column(blockId)"`
-	Fee       int64  `json:"fee"`
-	Amount    int64  `json:"amount"`
-	Timestamp int64  `json:"timestamp"`
-	Sender    string `json:"sender"`
-	Recipient string `json:"recipient"`
-	Args      string `json:"args"`
-	Message   string `json:"message"`
-	Signature string `json:"signature"`
-}
+func (t *Transaction) Transform(o map[string]interface{}) {
+	var ok = true
+	t.Id, ok = o["id"].(string)
+	t.Type, ok = o["type"].(uint8)
+	id, ok := o["blockId"].(string)
+	t.BlockId = &Block{Id: id,}
+	t.Fee, ok = o["fee"].(int64)
+	t.Amount, ok = o["amount"].(int64)
+	t.Timestamp, ok = o["timestamp"].(int64)
+	serder, ok := o["senderPublicKey"].(string)
+	t.Sender = &Account{PublicKey: serder,}
+	recipient, ok := o["recipientId"].(string)
+	t.Recipient = &Account{Address: recipient,}
+	t.Args, ok = o["args"].(string)
+	t.Message, ok = o["message"].(string)
+	t.Signature, ok = o["signature"].(string)
 
-func init() {
-	// 需要在init中注册定义的model,自动生成数据库
-	orm.RegisterModel(new(Peer), new(Account), new(Delegate), new(Vote), new(Lock), new(Block), new(Transaction))
+	if !ok {
+		return
+	}
 }

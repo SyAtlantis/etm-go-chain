@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/astaxie/beego"
-	_ "workspace/etm-go-chain/models"
-	_ "workspace/etm-go-chain/routers"
 )
 
 func main() {
@@ -11,7 +9,12 @@ func main() {
 	//Init()
 
 	// 模块运行
-	Setup()
+	//Setup()
+
+	//err, _ := event.Fire("bind", event.M{})
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	// 启动
 	beego.Run()

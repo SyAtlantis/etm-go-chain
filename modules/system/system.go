@@ -3,29 +3,23 @@ package system
 import (
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
+	"workspace/etm-go-chain/models"
 )
 
 func init() {
-	//var event = core.NewEvent()
-	//ch1 := make(chan core.DataEvent)
-	//ch2 := make(chan core.DataEvent)
-	//event.Subscribe("load", ch1)
-	//event.Subscribe("ready", ch2)
-	//
-	//go func() {
-	//	for {
-	//		select {
-	//		case d := <-ch1:
-	//			go onLoad(d)
-	//		case d := <-ch2:
-	//			go onReady(d)
-	//		}
-	//	}
-	//}()
+	m := system{}
+	models.RegisterModels("system", &m)
 
 	event.On("load", event.ListenerFunc(onLoad), event.Normal)
 	event.On("ready", event.ListenerFunc(onReady), event.High)
 
+}
+
+type system struct {
+}
+
+func (s system) NewModel() interface{} {
+	return &system{}
 }
 
 func onLoad(e event.Event) error {

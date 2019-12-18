@@ -27,11 +27,11 @@ func InitRedis() {
 	host := beego.AppConfig.String("redis_host")
 	cc, err = cache.NewCache("redis", StringsJoin(`{"conn":"`, host, `"}`))
 	if err != nil {
-		logs.Error("Init redis cache failure! ==>", err)
+		logs.Error("【Init】 redis cache failure! ==>", err)
 		return
 	}
 
-	logs.Info("Init redis cache ok!")
+	logs.Info("【Init】 redis cache ok!")
 }
 
 // SetCache 设置缓存
