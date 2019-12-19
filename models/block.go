@@ -1,9 +1,9 @@
 package models
 
 import (
+	"errors"
 	"github.com/astaxie/beego/config"
 	"github.com/astaxie/beego/orm"
-	"github.com/pkg/errors"
 )
 
 type iBlock interface {

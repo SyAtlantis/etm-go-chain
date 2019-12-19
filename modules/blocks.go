@@ -12,15 +12,15 @@ func init() {
 }
 
 type Blocks interface {
-	GetBlocks() []block
+	GetBlocks() []models.Block
 
-	GenerateBlock()
-	ProcessBlock() error
-	ApplyBlock() error
+	GenerateBlock() models.Block
+	ProcessBlock(mb models.Block) error
+	ApplyBlock(mb models.Block) error
 
-	verifyBlock() error
-	verifyGenesisBlock() error
-	saveBlock() error
+	verifyBlock(mb models.Block) error
+	verifyGenesisBlock(mb models.Block) error
+	saveBlock(mb models.Block) error
 }
 
 type block struct {
@@ -31,15 +31,15 @@ func NewBlocks() Blocks {
 	return &block{}
 }
 
-func (b *block) GetBlocks() []block {
+func (b *block) GetBlocks() []models.Block {
 	panic("implement me")
 }
 
-func (b *block) GenerateBlock() {
+func (b *block) GenerateBlock() models.Block{
 	panic("implement me")
 }
 
-func (b *block) ProcessBlock() error {
+func (b *block) ProcessBlock(mb models.Block) error {
 	//trs := b.Transactions
 	//for _, tr := range trs {
 	//	err := transactions.ProcessTransaction(*tr)
@@ -50,17 +50,17 @@ func (b *block) ProcessBlock() error {
 	//}
 
 	var err error
-	err = b.verifyBlock()
-	err = b.saveBlock()
+	err = b.verifyBlock(mb)
+	err = b.saveBlock(mb)
 
 	return err
 }
 
-func (b *block) ApplyBlock() error {
+func (b *block) ApplyBlock(mb models.Block) error {
 	panic("implement me")
 }
 
-func (b *block) verifyBlock() error {
+func (b *block) verifyBlock(mb models.Block) error {
 	var err error
 	if b.Height == 1 {
 		err = b.verifyGenesisBlock()
@@ -73,13 +73,13 @@ func (b *block) verifyBlock() error {
 	return err
 }
 
-func (b *block) verifyGenesisBlock() error {
+func (b *block) verifyGenesisBlock(mb models.Block) error {
 	var err error
 
 	return err
 }
 
-func (b *block) saveBlock() error {
+func (b *block) saveBlock(mb models.Block) error {
 	// save block transactions
 	trs := b.Transactions
 	for _, tr := range trs {

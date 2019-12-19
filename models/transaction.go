@@ -1,8 +1,8 @@
 package models
 
 import (
+	"errors"
 	"github.com/astaxie/beego/orm"
-	"github.com/pkg/errors"
 )
 
 type iTransaction interface {
