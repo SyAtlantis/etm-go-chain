@@ -1,4 +1,4 @@
-package accounts
+package modules
 
 import (
 	"github.com/astaxie/beego/logs"
@@ -7,10 +7,7 @@ import (
 )
 
 func init() {
-	m := account{}
-	models.RegisterModels("account", &m)
-
-	event.On("load", event.ListenerFunc(onLoad), event.Normal)
+	event.On("load", event.ListenerFunc(onLoadAccounts), event.Normal)
 }
 
 type Accounts interface {
@@ -21,7 +18,7 @@ type account struct {
 	models.Account
 }
 
-func (a *account) NewModel() interface{} {
+func NewAccounts() Accounts {
 	return &account{}
 }
 
@@ -29,7 +26,7 @@ func (a account) GetAccounts() {
 	panic("implement me")
 }
 
-func onLoad(e event.Event) error {
+func onLoadAccounts(e event.Event) error {
 	logs.Info("onload account", e)
 	return nil
 }

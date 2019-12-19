@@ -9,7 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func init() {
+func InitDb() {
 	dbName := beego.AppConfig.String("db_name")
 	dbCover, err := beego.AppConfig.Bool("db_cover")
 

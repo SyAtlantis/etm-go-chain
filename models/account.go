@@ -2,10 +2,13 @@ package models
 
 import "github.com/astaxie/beego/orm"
 
-type IAccount interface {
+type iAccount interface {
+	DbRead() (Account, error)
+	DbSave(data Account) error
 	Trans2Account(data interface{}) (Account, error)
 	Trans2Object() (map[string]interface{}, error)
 }
+
 type Account struct {
 	Address   string    `json:"address" orm:"pk"`
 	PublicKey string    `json:"publicKey" orm:"column(publicKey)"`
@@ -50,4 +53,24 @@ type Lock struct {
 
 func init() {
 	orm.RegisterModel(new(Account), new(Delegate), new(Vote), new(Lock))
+}
+
+func (a *Account) DbRead() (Account, error) {
+	o := orm.NewOrm()
+	err := o.Read(&a)
+	return *a, err
+}
+
+func (a *Account) DbSave(data Account) error {
+	o := orm.NewOrm()
+	_, _, err := o.ReadOrCreate(&data, "Address")
+	return err
+}
+
+func (a *Account) Trans2Account(data interface{}) (Account, error) {
+	panic("implement me")
+}
+
+func (a *Account) Trans2Object() (map[string]interface{}, error) {
+	panic("implement me")
 }

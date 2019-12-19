@@ -15,7 +15,7 @@ import (
 
 var cc cache.Cache
 
-func init() {
+func InitCache() {
 	var err error
 
 	defer func() {

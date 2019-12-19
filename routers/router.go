@@ -8,9 +8,8 @@
 package routers
 
 import (
-	"workspace/etm-go-chain/controllers"
-
 	"github.com/astaxie/beego"
+	"workspace/etm-go-chain/controllers"
 )
 
 func init() {

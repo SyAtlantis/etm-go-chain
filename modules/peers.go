@@ -1,4 +1,4 @@
-package peers
+package modules
 
 import (
 	"github.com/astaxie/beego/logs"
@@ -7,10 +7,10 @@ import (
 )
 
 func init() {
-	m := peer{}
-	models.RegisterModels("peers", &m)
+	//m := peer{}
+	//models.RegisterModels("peers", &m)
 
-	event.On("load", event.ListenerFunc(onLoad), event.Normal)
+	event.On("load", event.ListenerFunc(onLoadPeers), event.Normal)
 }
 
 type Peers interface {
@@ -21,7 +21,7 @@ type peer struct {
 	models.Peer
 }
 
-func (p peer) NewModel() interface{} {
+func NewPeers() Peers {
 	return &peer{}
 }
 
@@ -29,7 +29,7 @@ func (p peer) GetPeers() {
 	panic("implement me")
 }
 
-func onLoad(e event.Event) error {
+func onLoadPeers(e event.Event) error {
 	logs.Info("onload peers", e)
 	return nil
 }

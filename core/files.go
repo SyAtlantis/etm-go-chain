@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/config"
 	"github.com/astaxie/beego/logs"
 	"workspace/etm-go-chain/models"
@@ -10,15 +11,12 @@ var (
 	appConfig    config.Configer
 	genesisBlock models.Block
 )
-func init(){
-	initConfig()
-	initGenesisBlock()
-}
 
-func initConfig() {
-	conf, err := config.NewConfig("json", "conf/config.json")
+func InitConfig() {
+	file := beego.AppConfig.String("file_config")
+	conf, err := config.NewConfig("json", file)
 	if err != nil {
-		logs.Error(err)
+		logs.Error("【Init】 config error! ==>", err)
 		return
 	}
 	appConfig = conf
@@ -26,15 +24,15 @@ func initConfig() {
 	logs.Info("【Init】 config ok!")
 }
 
-func initGenesisBlock() {
-	genesis, err := config.NewConfig("json", "conf/genesisBlock.json")
+func InitGenesisBlock() {
+	file := beego.AppConfig.String("file_genesisBlock")
+	genesis, err := config.NewConfig("json", file)
 	if err != nil {
-		logs.Error("【Init】 genesisBlock err! ==>", err)
+		logs.Error("【Init】 genesisBlock error! ==>", err)
 		return
 	}
-
-	b := models.Block{}
-	b.Transform(genesis)
+	newBlock := models.Block{}
+	b, err := newBlock.Trans2Block(genesis)
 	genesisBlock = b
 
 	logs.Info("【Init】 genesisBlock ok!")

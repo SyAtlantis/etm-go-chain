@@ -6,20 +6,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-type IBlock interface {
+type iBlock interface {
 	Create() error
 	GetBytes() ([]byte, error)
 	GetHash() ([32]byte, error)
 	GetId() (string, error)
 	GetSignature() (string, error)
+	DbRead() (Block, error)
+	DbSave(data Block) error
 	SortTransactions() ([]Transaction, error)
 	Trans2Block(data interface{}) (Block, error)
 	Trans2Object() (map[string]interface{}, error)
 }
 
 type Block struct {
-	Id                   string         `json:"id" orm:"pk"`
-	Height               int64          `json:"height"`
+	Id                   string         `json:"id"`
+	Height               int64          `json:"height" orm:"pk"`
 	Timestamp            int64          `json:"timestamp"`
 	TotalAmount          int64          `json:"totalAmount" orm:"column(totalAmount)"`
 	TotalFee             int64          `json:"totalFee" orm:"column(totalFee)"`
@@ -53,6 +55,18 @@ func (b *Block) GetSignature() (string, error) {
 	panic("implement me")
 }
 
+func (b *Block) DbRead() (Block, error) {
+	o := orm.NewOrm()
+	err := o.Read(&b)
+	return *b, err
+}
+
+func (b *Block) DbSave(data Block) error {
+	o := orm.NewOrm()
+	_, _, err := o.ReadOrCreate(&data, "Id")
+	return err
+}
+
 func (b *Block) SortTransactions() ([]Transaction, error) {
 	panic("implement me")
 }
@@ -62,33 +76,36 @@ func (b *Block) Trans2Block(data interface{}) (Block, error) {
 	c, ok := data.(config.Configer)
 	if !ok {
 		err = errors.New("config not type of config.Configer")
-	}
+	} else {
+		b.Id = c.String("id")
+		b.Height, err = c.Int64("height")
+		b.Timestamp, err = c.Int64("timestamp")
+		b.TotalAmount, err = c.Int64("totalAmount")
+		b.TotalFee, err = c.Int64("totalFee")
+		b.Reward, err = c.Int64("reward")
+		b.PayloadHash = c.String("payloadHash")
+		b.PayloadLength, err = c.Int("payloadLength")
+		b.PreviousBlock = c.String("previousBlock")
+		b.BlockSignature = c.String("blockSignature")
+		b.NumberOfTransactions, err = c.Int("numberOfTransactions")
+		b.Generator = &Delegate{
+			Username: c.String("generatorPublicKey"),
+		}
+		var transactions []*Transaction
+		trs, err := c.DIY("transactions")
+		if err != nil {
+			return *b, err
+		}
+		for _, tr := range trs.([]interface{}) {
+			t := Transaction{}
+			tt, err := t.Trans2Transaction(tr)
+			if err != nil {
 
-	b.Id = c.String("id")
-	b.Height, err = c.Int64("height")
-	b.Timestamp, err = c.Int64("timestamp")
-	b.TotalAmount, err = c.Int64("totalAmount")
-	b.TotalFee, err = c.Int64("totalFee")
-	b.Reward, err = c.Int64("reward")
-	b.PayloadHash = c.String("payloadHash")
-	b.PayloadLength, err = c.Int("payloadLength")
-	b.PreviousBlock = c.String("previousBlock")
-	b.BlockSignature = c.String("blockSignature")
-	b.NumberOfTransactions, err = c.Int("numberOfTransactions")
-	b.Generator = &Delegate{
-		Username: c.String("generatorPublicKey"),
+			}
+			transactions = append(transactions, &tt)
+		}
+		b.Transactions = transactions
 	}
-	var transactions []*Transaction
-	trs, err := c.DIY("transactions")
-	if err != nil {
-		return *b, err
-	}
-	for _, tr := range trs.([]interface{}) {
-		t := Transaction{}
-		t.Transform(tr.(map[string]interface{}))
-		transactions = append(transactions, &t)
-	}
-	b.Transactions = transactions
 
 	return *b, err
 }
