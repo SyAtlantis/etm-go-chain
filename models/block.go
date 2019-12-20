@@ -6,6 +6,10 @@ import (
 	"github.com/astaxie/beego/orm"
 )
 
+func init() {
+	orm.RegisterModel(new(Block))
+}
+
 type iBlock interface {
 	Create() error
 	GetBytes() ([]byte, error)
@@ -13,7 +17,9 @@ type iBlock interface {
 	GetId() (string, error)
 	GetSignature() (string, error)
 	DbRead() (Block, error)
-	DbSave(data Block) error
+	DbSave() error
+	DbReadMulti() ([]Block, error)
+	DbSaveMulti(bs []Block) error
 	SortTransactions() ([]Transaction, error)
 	Trans2Block(data interface{}) (Block, error)
 	Trans2Object() (map[string]interface{}, error)
@@ -61,10 +67,18 @@ func (b *Block) DbRead() (Block, error) {
 	return *b, err
 }
 
-func (b *Block) DbSave(data Block) error {
+func (b *Block) DbSave() error {
 	o := orm.NewOrm()
-	_, _, err := o.ReadOrCreate(&data, "Id")
+	_, _, err := o.ReadOrCreate(b, "Id")
 	return err
+}
+
+func (b *Block) DbReadMulti() ([]Block, error) {
+	panic("implement me")
+}
+
+func (b *Block) DbSaveMulti(bs []Block) error {
+	panic("implement me")
 }
 
 func (b *Block) SortTransactions() ([]Transaction, error) {
@@ -112,8 +126,4 @@ func (b *Block) Trans2Block(data interface{}) (Block, error) {
 
 func (b *Block) Trans2Object() (map[string]interface{}, error) {
 	panic("implement me")
-}
-
-func init() {
-	orm.RegisterModel(new(Block))
 }

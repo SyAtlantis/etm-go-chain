@@ -3,8 +3,9 @@ package modules
 import (
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
-	"workspace/etm-go-chain/core"
-	"workspace/etm-go-chain/models"
+
+	"etm-go-chain/core"
+	"etm-go-chain/models"
 )
 
 func init() {
@@ -16,11 +17,11 @@ type Blocks interface {
 
 	GenerateBlock() models.Block
 	ProcessBlock(mb models.Block) error
-	ApplyBlock(mb models.Block) error
 
 	verifyBlock(mb models.Block) error
 	verifyGenesisBlock(mb models.Block) error
 	saveBlock(mb models.Block) error
+	applyBlock(mb models.Block) error
 }
 
 type block struct {
@@ -35,7 +36,7 @@ func (b *block) GetBlocks() []models.Block {
 	panic("implement me")
 }
 
-func (b *block) GenerateBlock() models.Block{
+func (b *block) GenerateBlock() models.Block {
 	panic("implement me")
 }
 
@@ -56,20 +57,9 @@ func (b *block) ProcessBlock(mb models.Block) error {
 	return err
 }
 
-func (b *block) ApplyBlock(mb models.Block) error {
-	panic("implement me")
-}
-
 func (b *block) verifyBlock(mb models.Block) error {
 	var err error
-	if b.Height == 1 {
-		err = b.verifyGenesisBlock()
-	} else {
-		// verify block transactions
 
-		// verify block
-
-	}
 	return err
 }
 
@@ -81,19 +71,24 @@ func (b *block) verifyGenesisBlock(mb models.Block) error {
 
 func (b *block) saveBlock(mb models.Block) error {
 	// save block transactions
-	trs := b.Transactions
+	trs := mb.Transactions
+	var trList []models.Transaction
 	for _, tr := range trs {
-		err := transactions.SaveTransaction(*tr)
-		if err != nil {
-
-		}
-		logs.Info(tr)
+		trList = append(trList, *tr)
+	}
+	if err := transactions.SaveTransactions(trList); err != nil {
+		return err
 	}
 
+	//for _, tr := range trs {
+	//	err := transactions.SaveTransaction(*tr)
+	//	if err != nil {
+	//		logs.Error("Save block transactions error! ==>", err)
+	//	}
+	//}
+
 	// save block
-	//o := orm.NewOrm()
-	//_, _, err := o.ReadOrCreate(&b.Block, "Id")
-	err := b.Block.DbSave(b.Block)
+	err := mb.DbSave()
 	if err != nil {
 		logs.Error("Save block error! ==>", err)
 	}
@@ -101,23 +96,28 @@ func (b *block) saveBlock(mb models.Block) error {
 	return nil
 }
 
+func (b *block) applyBlock(mb models.Block) error {
+	panic("implement me")
+}
+
 func onBindBlock(e event.Event) error {
 	logs.Info("onBind block", e.Data())
 
 	genesisBlock := core.GetGenesisBlock()
-	b := &block{genesisBlock}
 
-	err := b.verifyGenesisBlock()
-	if err != nil {
+	if err := blocks.verifyGenesisBlock(genesisBlock); err != nil {
 		logs.Error(" 【onBind】verify GenesisBlock error ==>", err)
+		return err
 	}
 
-	err = b.saveBlock()
-	if err != nil {
+	if err := blocks.saveBlock(genesisBlock); err != nil {
 		logs.Error(" 【onBind】save GenesisBlock error ==>", err)
+		return err
 	}
 
-	err, _ = event.Fire("load", event.M{})
+	if err, _ := event.Fire("load", event.M{}); err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }

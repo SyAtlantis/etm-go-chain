@@ -9,7 +9,7 @@ package routers
 
 import (
 	"github.com/astaxie/beego"
-	"workspace/etm-go-chain/controllers"
+	"etm-go-chain/controllers"
 )
 
 func init() {

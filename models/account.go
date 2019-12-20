@@ -2,15 +2,22 @@ package models
 
 import "github.com/astaxie/beego/orm"
 
+func init() {
+	orm.RegisterModel(new(Account), new(Delegate), new(Vote), new(Lock))
+}
+
 type iAccount interface {
 	DbRead() (Account, error)
-	DbSave(data Account) error
+	DbSave() error
+	DbReadMulti() ([]Account, error)
+	DbSaveMulti(as []Account) error
 	Trans2Account(data interface{}) (Account, error)
 	Trans2Object() (map[string]interface{}, error)
 }
 
 type Account struct {
-	Address   string    `json:"address" orm:"pk"`
+	Key       int64     `orm:"pk;auto"`
+	Address   string    `json:"address"`
 	PublicKey string    `json:"publicKey" orm:"column(publicKey)"`
 	Balance   int64     `json:"balance"`
 	Rewards   int64     `json:"rewards"`
@@ -21,7 +28,8 @@ type Account struct {
 }
 
 type Delegate struct {
-	Username       string       `json:"username" orm:"pk"`
+	Key            int64        `orm:"pk;auto"`
+	Username       string       `json:"username"`
 	Account        *Account     `json:"account" orm:"reverse(one)"`
 	TransactionId  *Transaction `json:"transactionId" orm:"rel(one);column(transaction_id)"`
 	Voters         []*Vote      `json:"voters" orm:"reverse(many)"`
@@ -32,7 +40,7 @@ type Delegate struct {
 }
 
 type Vote struct {
-	Id            int
+	Key           int64        `orm:"pk;auto"`
 	Account       *Account     `json:"account" orm:"reverse(one)"`
 	TransactionId *Transaction `json:"transactionId" orm:"rel(one);column(transaction_id)"`
 	Delegate      *Delegate    `json:"delegate" orm:"rel(fk)"`
@@ -41,7 +49,7 @@ type Vote struct {
 }
 
 type Lock struct {
-	Id            int
+	Key           int64        `orm:"pk;auto"`
 	Account       *Account     `json:"account" orm:"rel(fk)"`
 	TransactionId *Transaction `json:"transactionId" orm:"rel(one);column(transaction_id)"`
 	LockAmount    int64        `json:"lockAmount" orm:"column(lockAmount)"`
@@ -51,20 +59,24 @@ type Lock struct {
 	State         int          `json:"state"`
 }
 
-func init() {
-	orm.RegisterModel(new(Account), new(Delegate), new(Vote), new(Lock))
-}
-
 func (a *Account) DbRead() (Account, error) {
 	o := orm.NewOrm()
 	err := o.Read(&a)
 	return *a, err
 }
 
-func (a *Account) DbSave(data Account) error {
+func (a *Account) DbSave() error {
 	o := orm.NewOrm()
-	_, _, err := o.ReadOrCreate(&data, "Address")
+	_, _, err := o.ReadOrCreate(a, "Address")
 	return err
+}
+
+func (a *Account) DbReadMulti() ([]Account, error) {
+	panic("implement me")
+}
+
+func (a *Account) DbSaveMulti(as []Account) error {
+	panic("implement me")
 }
 
 func (a *Account) Trans2Account(data interface{}) (Account, error) {

@@ -5,9 +5,10 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/beego/i18n"
 	"github.com/gookit/event"
-	"workspace/etm-go-chain/core"
-	"workspace/etm-go-chain/modules"
-	_ "workspace/etm-go-chain/routers"
+
+	"etm-go-chain/core"
+	"etm-go-chain/modules"
+	_ "etm-go-chain/routers"
 )
 
 func init() {
@@ -15,7 +16,7 @@ func init() {
 	initSwagger()
 	initI18n()
 
-	core.InitCache()
+	//core.InitCache()
 	core.InitDb()
 	core.InitConfig()
 	core.InitGenesisBlock()

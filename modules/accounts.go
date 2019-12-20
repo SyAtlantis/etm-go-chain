@@ -3,7 +3,8 @@ package modules
 import (
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
-	"workspace/etm-go-chain/models"
+
+	"etm-go-chain/models"
 )
 
 func init() {

@@ -4,7 +4,8 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/config"
 	"github.com/astaxie/beego/logs"
-	"workspace/etm-go-chain/models"
+
+	"etm-go-chain/models"
 )
 
 var (

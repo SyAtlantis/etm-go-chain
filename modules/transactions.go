@@ -2,7 +2,8 @@ package modules
 
 import (
 	"github.com/astaxie/beego/logs"
-	"workspace/etm-go-chain/models"
+
+	"etm-go-chain/models"
 )
 
 func init() {
@@ -12,6 +13,7 @@ type Transactions interface {
 	GetTransactions() ([]models.Transaction, error)
 	ProcessTransaction(tr models.Transaction) error
 	SaveTransaction(tr models.Transaction) error
+	SaveTransactions(trs []models.Transaction) error
 	ReceiveTransactions()
 
 	hasUnconfirmed() bool
@@ -71,10 +73,19 @@ func (t transaction) UndoUnconfirmed() error {
 }
 
 func (t transaction) SaveTransaction(tr models.Transaction) error {
-	err := t.Transaction.DbSave(tr)
+	err := tr.DbSave()
 	if err != nil {
 		logs.Error("Save transaction error! ==>", err)
 	}
 
-	return nil
+	return err
+}
+
+func (t transaction) SaveTransactions(trs []models.Transaction) error {
+	err := t.Transaction.DbSaveMulti(trs)
+	if err != nil {
+		logs.Error("Save transaction multi error! ==>", err)
+	}
+
+	return err
 }
