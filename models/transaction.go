@@ -15,10 +15,10 @@ type iTransaction interface {
 	GetHash() ([32]byte, error)
 	GetId() (string, error)
 	GetSignature() (string, error)
-	DbRead() (Transaction, error)
-	DbSave() error
-	DbReadMulti() ([]Transaction, error)
-	DbSaveMulti(ts []Transaction) error
+	GetTransaction() (Transaction, error)
+	SetTransaction() error
+	GetTransactions() ([]Transaction, error)
+	SetTransactions(ts []Transaction) error
 	Trans2Transaction(data interface{}) (Transaction, error)
 	Trans2Object() (map[string]interface{}, error)
 }
@@ -58,13 +58,13 @@ func (t *Transaction) GetSignature() (string, error) {
 	panic("implement me")
 }
 
-func (t *Transaction) DbRead() (Transaction, error) {
+func (t *Transaction) GetTransaction() (Transaction, error) {
 	o := orm.NewOrm()
 	err := o.Read(&t)
 	return *t, err
 }
 
-func (t *Transaction) DbSave() error {
+func (t *Transaction) SetTransaction() error {
 	o := orm.NewOrm()
 	created, id, err := o.ReadOrCreate(t, "Id")
 	if err != nil {
@@ -76,11 +76,11 @@ func (t *Transaction) DbSave() error {
 	return err
 }
 
-func (t *Transaction) DbReadMulti() ([]Transaction, error) {
+func (t *Transaction) GetTransactions() ([]Transaction, error) {
 	panic("implement me")
 }
 
-func (t *Transaction) DbSaveMulti(ts []Transaction) error {
+func (t *Transaction) SetTransactions(ts []Transaction) error {
 	o := orm.NewOrm()
 	_, err := o.InsertMulti(20, ts)
 	return err

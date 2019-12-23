@@ -16,10 +16,10 @@ type iBlock interface {
 	GetHash() ([32]byte, error)
 	GetId() (string, error)
 	GetSignature() (string, error)
-	DbRead() (Block, error)
-	DbSave() error
-	DbReadMulti() ([]Block, error)
-	DbSaveMulti(bs []Block) error
+	GetBlock() (Block, error)
+	SetBlock() error
+	GetBlocks() ([]Block, error)
+	SetBlocks(bs []Block) error
 	SortTransactions() ([]Transaction, error)
 	Trans2Block(data interface{}) (Block, error)
 	Trans2Object() (map[string]interface{}, error)
@@ -61,13 +61,13 @@ func (b *Block) GetSignature() (string, error) {
 	panic("implement me")
 }
 
-func (b *Block) DbRead() (Block, error) {
+func (b *Block) GetBlock() (Block, error) {
 	o := orm.NewOrm()
 	err := o.Read(&b)
 	return *b, err
 }
 
-func (b *Block) DbSave() error {
+func (b *Block) SetBlock() error {
 	var err error
 	o := orm.NewOrm()
 
@@ -102,11 +102,11 @@ func (b *Block) DbSave() error {
 	return o.Commit()
 }
 
-func (b *Block) DbReadMulti() ([]Block, error) {
+func (b *Block) GetBlocks() ([]Block, error) {
 	panic("implement me")
 }
 
-func (b *Block) DbSaveMulti(bs []Block) error {
+func (b *Block) SetBlocks(bs []Block) error {
 	panic("implement me")
 }
 

@@ -7,10 +7,10 @@ func init() {
 }
 
 type iAccount interface {
-	DbRead() (Account, error)
-	DbSave() error
-	DbReadMulti() ([]Account, error)
-	DbSaveMulti(as []Account) error
+	GetAccount() (Account, error)
+	SetAccount() error
+	GetAccounts() ([]Account, error)
+	SetAccounts(as []Account) error
 	Trans2Account(data interface{}) (Account, error)
 	Trans2Object() (map[string]interface{}, error)
 }
@@ -59,23 +59,23 @@ type Lock struct {
 	State         int          `json:"state"`
 }
 
-func (a *Account) DbRead() (Account, error) {
+func (a *Account) GetAccount() (Account, error) {
 	o := orm.NewOrm()
 	err := o.Read(&a)
 	return *a, err
 }
 
-func (a *Account) DbSave() error {
+func (a *Account) SetAccount() error {
 	o := orm.NewOrm()
 	_, _, err := o.ReadOrCreate(a, "Address")
 	return err
 }
 
-func (a *Account) DbReadMulti() ([]Account, error) {
+func (a *Account) GetAccounts() ([]Account, error) {
 	panic("implement me")
 }
 
-func (a *Account) DbSaveMulti(as []Account) error {
+func (a *Account) SetAccounts(as []Account) error {
 	panic("implement me")
 }
 
