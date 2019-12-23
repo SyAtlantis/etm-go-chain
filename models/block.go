@@ -68,9 +68,38 @@ func (b *Block) DbRead() (Block, error) {
 }
 
 func (b *Block) DbSave() error {
+	var err error
 	o := orm.NewOrm()
-	_, _, err := o.ReadOrCreate(b, "Id")
-	return err
+
+	//保存区块错误时，需要事物回滚
+	err = o.Begin()
+
+	var created bool
+	created, _, err = o.ReadOrCreate(b, "Id")
+	if err != nil {
+		rollErr := o.Rollback()
+		if rollErr != nil {
+			panic(rollErr)
+		}
+		return err
+	}
+
+	if created {
+		// 保存区块时，需要保存区块中交易
+		trs := b.Transactions
+		for _, tr := range trs {
+			err := tr.DbSave()
+			if err != nil {
+				rollErr := o.Rollback()
+				if rollErr != nil {
+					panic(rollErr)
+				}
+				return err
+			}
+		}
+	}
+
+	return o.Commit()
 }
 
 func (b *Block) DbReadMulti() ([]Block, error) {

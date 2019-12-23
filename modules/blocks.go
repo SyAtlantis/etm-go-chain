@@ -71,16 +71,16 @@ func (b *block) verifyGenesisBlock(mb models.Block) error {
 
 func (b *block) saveBlock(mb models.Block) error {
 	// save block transactions
-	trs := mb.Transactions
-	var trList []models.Transaction
-	for _, tr := range trs {
-		trList = append(trList, *tr)
-	}
-	if err := transactions.SaveTransactions(trList); err != nil {
-		return err
-	}
-
+	//trs := mb.Transactions
+	//var trList []models.Transaction
 	//for _, tr := range trs {
+	//	trList = append(trList, *tr)
+	//}
+	//if err := transactions.SaveTransactions(trList); err != nil {
+	//	return err
+	//}
+
+	//for _, tr := range trs{
 	//	err := transactions.SaveTransaction(*tr)
 	//	if err != nil {
 	//		logs.Error("Save block transactions error! ==>", err)

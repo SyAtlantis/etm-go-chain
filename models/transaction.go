@@ -66,7 +66,13 @@ func (t *Transaction) DbRead() (Transaction, error) {
 
 func (t *Transaction) DbSave() error {
 	o := orm.NewOrm()
-	_, err := o.Insert(t)
+	created, id, err := o.ReadOrCreate(t, "Id")
+	if err != nil {
+		return err
+	}
+	if !created {
+		err = errors.New("This transaction already exists in the db:" + string(id))
+	}
 	return err
 }
 
