@@ -8,6 +8,6 @@ require (
 	github.com/beego/i18n v0.0.0-20161101132742-e9308947f407
 	github.com/go-xorm/xorm v0.7.9 // indirect
 	github.com/gookit/event v1.0.3
-	github.com/mattn/go-sqlite3 v1.10.0
+	github.com/mattn/go-sqlite3 v2.0.2+incompatible
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 )
