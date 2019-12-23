@@ -88,7 +88,7 @@ func (b *Block) SetBlock() error {
 		// 保存区块时，需要保存区块中交易
 		trs := b.Transactions
 		for _, tr := range trs {
-			err := tr.DbSave()
+			err := tr.SetTransaction()
 			if err != nil {
 				rollErr := o.Rollback()
 				if rollErr != nil {

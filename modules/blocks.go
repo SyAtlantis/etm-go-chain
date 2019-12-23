@@ -88,9 +88,10 @@ func (b *block) saveBlock(mb models.Block) error {
 	//}
 
 	// save block
-	err := mb.DbSave()
+	err := mb.SetBlock()
 	if err != nil {
 		logs.Error("Save block error! ==>", err)
+		return err
 	}
 
 	return nil

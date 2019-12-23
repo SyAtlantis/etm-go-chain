@@ -73,7 +73,7 @@ func (t transaction) UndoUnconfirmed() error {
 }
 
 func (t transaction) SaveTransaction(tr models.Transaction) error {
-	err := tr.DbSave()
+	err := tr.SetTransaction()
 	if err != nil {
 		logs.Error("Save transaction error! ==>", err)
 	}
@@ -82,7 +82,7 @@ func (t transaction) SaveTransaction(tr models.Transaction) error {
 }
 
 func (t transaction) SaveTransactions(trs []models.Transaction) error {
-	err := t.Transaction.DbSaveMulti(trs)
+	err := t.Transaction.SetTransactions(trs)
 	if err != nil {
 		logs.Error("Save transaction multi error! ==>", err)
 	}
