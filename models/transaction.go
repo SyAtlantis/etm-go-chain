@@ -101,19 +101,20 @@ func (t *Transaction) Create(data TrData) error {
 	t.Amount = 0
 	t.Fee = data.Fee
 	t.Timestamp = data.Timestamp
-	t.Sender = data.Sender.PublicKey
+	t.Sender = &Account{PublicKey: data.Sender.PublicKey}
 	//t.Asset = data.Asset
-	t.Args = data.Args
+	args, err := json.Marshal(data.Args)
+	t.Args = string(args)
 	t.Message = data.Message
 
 	trTypes[data.Type].create(t, data) //构建对应子交易数据
 
-	t.Signature,err = t.GetSignature(data.Keypair)
+	t.Signature, err = t.GetSignature(data.Keypair)
 	//if data.Type != 1 && !data.SecondKeypair.IsEmpty() {
 	//	t.SignSignature = t.GetSignature(data.SecondKeypair)
 	//}
 
-	t.Id,err = t.GetId();
+	t.Id, err = t.GetId();
 	return err
 }
 
@@ -128,7 +129,7 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 	err = binary.Write(bb, binary.LittleEndian, uint8(t.Type))
 	err = binary.Write(bb, binary.LittleEndian, uint32(t.Timestamp))
 
-	if !t.Sender.IsEmpty(){
+	if !t.Sender.IsEmpty() {
 		senderPublicKeyBytes, _ := hex.DecodeString(t.Sender.PublicKey)
 		bb.Write(senderPublicKeyBytes)
 	}
@@ -154,7 +155,7 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 
 	if t.Args != "nil" {
 		var args []byte
-		err = json.Unmarshal(args,t.Args)
+		err = json.Unmarshal(args, t.Args)
 		for i := 0; i < len(args); i++ {
 			bb.WriteByte(args[i])
 		}
@@ -174,7 +175,7 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 	//	bb.Write(signSignatureBytes)
 	//}
 
-	return bb.Bytes(),err
+	return bb.Bytes(), err
 }
 
 func (t *Transaction) GetHash() ([32]byte, error) {
