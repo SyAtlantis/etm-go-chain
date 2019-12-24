@@ -82,10 +82,10 @@ func (t transaction) SaveTransaction(tr models.Transaction) error {
 }
 
 func (t transaction) SaveTransactions(trs []models.Transaction) error {
-	err := t.Transaction.SetTransactions(trs)
-	if err != nil {
-		logs.Error("Save transaction multi error! ==>", err)
-	}
+	//err := t.Transaction.SetTransactions(trs)
+	//if err != nil {
+	//	logs.Error("Save transaction multi error! ==>", err)
+	//}
 
-	return err
+	return nil
 }

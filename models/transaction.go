@@ -1,8 +1,17 @@
 package models
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"etm-go-chain/utils"
+	"fmt"
 	"github.com/astaxie/beego/orm"
+	"reflect"
+	"sort"
 )
 
 func init() {
@@ -10,15 +19,15 @@ func init() {
 }
 
 type iTransaction interface {
-	Create() error
+	IsEmpty() bool
+	Create(data TrData) error
 	GetBytes() ([]byte, error)
 	GetHash() ([32]byte, error)
 	GetId() (string, error)
-	GetSignature() (string, error)
+	GetSignature(utils.Keypair) (string, error)
+	VerifySignature() (bool error)
 	GetTransaction() (Transaction, error)
 	SetTransaction() error
-	GetTransactions() ([]Transaction, error)
-	SetTransactions(ts []Transaction) error
 	Trans2Transaction(data interface{}) (Transaction, error)
 	Trans2Object() (map[string]interface{}, error)
 }
@@ -38,23 +47,154 @@ type Transaction struct {
 	Signature string   `json:"signature"`
 }
 
-func (t *Transaction) Create() error {
-	panic("implement me")
+type TrData struct {
+	Type        uint8
+	Amount      int64
+	Fee         int64
+	Timestamp   int64
+	RecipientId string
+	//Asset          Asset
+	Args           []string
+	Message        string
+	Sender         Account
+	Keypair        utils.Keypair
+	SecondKeypair  utils.Keypair
+	Votes          []string
+	Username       string
+	Name           string
+	Desc           string
+	Maximun        string
+	Precision      byte
+	Strategy       string
+	AllawWriteOff  byte
+	AllowWhiteList byte
+	AllowBlackList byte
+	Currency       string
+	UiaAmount      string
+	FlagType       byte
+	Flag           byte
+	Operator       string
+	List           []string
+}
+
+type SubTr interface {
+	create(tr *Transaction, data TrData)
+	getBytes(tr *Transaction) []byte
+}
+
+var trTypes = make(map[uint8]SubTr)
+
+func (t *Transaction) IsEmpty() bool {
+	return reflect.DeepEqual(t, Transaction{})
+}
+
+func (t *Transaction) Create(data TrData) error {
+	var err error
+	if data.Sender.IsEmpty() {
+		return err
+	}
+	if data.Keypair.IsEmpty() {
+		return err
+	}
+
+	t.Type = data.Type
+	t.Amount = 0
+	t.Fee = data.Fee
+	t.Timestamp = data.Timestamp
+	t.Sender = data.Sender.PublicKey
+	//t.Asset = data.Asset
+	t.Args = data.Args
+	t.Message = data.Message
+
+	trTypes[data.Type].create(t, data) //构建对应子交易数据
+
+	t.Signature,err = t.GetSignature(data.Keypair)
+	//if data.Type != 1 && !data.SecondKeypair.IsEmpty() {
+	//	t.SignSignature = t.GetSignature(data.SecondKeypair)
+	//}
+
+	t.Id,err = t.GetId();
+	return err
 }
 
 func (t *Transaction) GetBytes() ([]byte, error) {
-	panic("implement me")
+	var err error
+	assetBytes := trTypes[t.Type].getBytes(t)
+	assetSize := len(assetBytes)
+
+	//bb := bytes.NewBuffer(make([]byte, size+assetSize))
+	bb := bytes.NewBuffer([]byte{})
+
+	err = binary.Write(bb, binary.LittleEndian, uint8(t.Type))
+	err = binary.Write(bb, binary.LittleEndian, uint32(t.Timestamp))
+
+	if !t.Sender.IsEmpty(){
+		senderPublicKeyBytes, _ := hex.DecodeString(t.Sender.PublicKey)
+		bb.Write(senderPublicKeyBytes)
+	}
+
+	//if !t.Requester.IsEmpty() {
+	//	requesterPublicKeyBytes, _ := hex.DecodeString(t.Requester.PublicKey)
+	//	bb.Write(requesterPublicKeyBytes)
+	//}
+
+	if !t.Recipient.IsEmpty() {
+		bb.WriteString(t.Recipient.Address)
+	} else {
+		for i := 0; i < 8; i++ {
+			bb.WriteByte(0);
+		}
+	}
+
+	err = binary.Write(bb, binary.LittleEndian, uint64(t.Amount))
+
+	if t.Message != "" {
+		bb.WriteString(string(t.Message))
+	}
+
+	if t.Args != "nil" {
+		var args []byte
+		err = json.Unmarshal(args,t.Args)
+		for i := 0; i < len(args); i++ {
+			bb.WriteByte(args[i])
+		}
+	}
+
+	if assetSize > 0 {
+		bb.Write(assetBytes)
+	}
+
+	//if !skipSignature && tr.Signature != "" {
+	//	signatureBytes, _ := hex.DecodeString(tr.Signature)
+	//	bb.Write(signatureBytes)
+	//}
+	//
+	//if !skipSecondSignature && tr.SignSignature != "" {
+	//	signSignatureBytes, _ := hex.DecodeString(tr.SignSignature)
+	//	bb.Write(signSignatureBytes)
+	//}
+
+	return bb.Bytes(),err
 }
 
 func (t *Transaction) GetHash() ([32]byte, error) {
-	panic("implement me")
+	bs, err := t.GetBytes()
+	hash := sha256.Sum256(bs)
+	return hash, err
 }
 
 func (t *Transaction) GetId() (string, error) {
-	panic("implement me")
+	hash, err := t.GetHash()
+	return fmt.Sprintf("%x", hash), err
 }
 
-func (t *Transaction) GetSignature() (string, error) {
+func (t *Transaction) GetSignature(keypair utils.Keypair) (string, error) {
+	hash, err := t.GetHash()
+	sign := ed.Sign(hash[:], keypair)
+	return fmt.Sprintf("%x", sign), err
+}
+
+func (t *Transaction) VerifySignature() (bool error) {
 	panic("implement me")
 }
 
@@ -73,16 +213,6 @@ func (t *Transaction) SetTransaction() error {
 	if !created {
 		err = errors.New("This transaction already exists in the db:" + string(id))
 	}
-	return err
-}
-
-func (t *Transaction) GetTransactions() ([]Transaction, error) {
-	panic("implement me")
-}
-
-func (t *Transaction) SetTransactions(ts []Transaction) error {
-	o := orm.NewOrm()
-	_, err := o.InsertMulti(20, ts)
 	return err
 }
 
@@ -115,4 +245,38 @@ func (t *Transaction) Trans2Transaction(data interface{}) (Transaction, error) {
 
 func (t *Transaction) Trans2Object() (map[string]interface{}, error) {
 	panic("implement me")
+}
+
+type Trs []*Transaction
+
+type iTransactions interface {
+	Sort()
+}
+
+func (trs Trs) Len() int {
+	return len(trs)
+}
+
+func (trs Trs) Swap(i, j int) {
+	trs[i], trs[j] = trs[j], trs[i]
+}
+
+func (trs Trs) Less(i, j int) bool {
+	if trs[i].Type != trs[j].Type {
+		if trs[i].Type == 1 {
+			return true
+		}
+		if trs[j].Type == 1 {
+			return false
+		}
+		return trs[i].Type > trs[j].Type
+	}
+	if trs[i].Amount != trs[j].Amount {
+		return trs[i].Amount > trs[j].Amount
+	}
+	return trs[i].Id > trs[j].Id
+}
+
+func (trs Trs) Sort() {
+	sort.Sort(trs)
 }

@@ -1,12 +1,16 @@
 package models
 
-import "github.com/astaxie/beego/orm"
+import (
+	"github.com/astaxie/beego/orm"
+	"reflect"
+)
 
 func init() {
 	orm.RegisterModel(new(Account), new(Delegate), new(Vote), new(Lock))
 }
 
 type iAccount interface {
+	IsEmpty() bool
 	GetAccount() (Account, error)
 	SetAccount() error
 	GetAccounts() ([]Account, error)
@@ -57,6 +61,10 @@ type Lock struct {
 	CurrentHeight int64        `json:"currentHeight" orm:"column(currentHeight)"`
 	Votes         int64        `json:"votes"`
 	State         int          `json:"state"`
+}
+
+func (a *Account) IsEmpty() bool {
+	return reflect.DeepEqual(a, Account{})
 }
 
 func (a *Account) GetAccount() (Account, error) {
