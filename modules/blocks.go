@@ -1,6 +1,8 @@
 package modules
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
 
@@ -64,9 +66,26 @@ func (b *block) verifyBlock(mb models.Block) error {
 }
 
 func (b *block) verifyGenesisBlock(mb models.Block) error {
-	var err error
+	var size int
+	hash := sha256.New()
+	trs := mb.Transactions
+	for i := 0; i < len(trs); i++ {
+		bs, err := trs[i].GetBytes()
+		if err != nil {
+			return err
+		}
+		size += len(bs)
+		hash.Write(bs)
+	}
+	payloadHash := fmt.Sprintf("%x", hash.Sum([]byte{}))
+	payloadLength := size
+	id, err := mb.GetId()
 
-	return err
+	if payloadLength != mb.PayloadLength || payloadHash != mb.PayloadHash || id != mb.Id || err != nil {
+		panic("Verify genesis block error!")
+	}
+
+	return nil
 }
 
 func (b *block) saveBlock(mb models.Block) error {

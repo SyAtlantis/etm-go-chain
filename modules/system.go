@@ -12,22 +12,35 @@ func init() {
 
 type System interface {
 	GetVersion() string
+	GetLastHeight() int64
+	LoadBlockChain() error
 }
 
 type sys struct {
-}
-
-func (s sys) GetVersion() string {
-	panic("implement me")
+	Version    string
+	LastHeight int64
 }
 
 func NewSystem() System {
 	return &sys{}
 }
 
-func onLoadSystem(e event.Event) error {
-	logs.Info("onload system", e)
+func (s *sys) GetVersion() string {
+	panic("implement me")
+}
+
+func (s *sys) GetLastHeight() int64 {
+	panic("implement me")
+}
+
+func (s *sys) LoadBlockChain() error {
+	logs.Debug("load block chain")
 	return nil
+}
+
+func onLoadSystem(e event.Event) error {
+	err := system.LoadBlockChain()
+	return err
 }
 
 func onReadySystem(e event.Event) error {

@@ -10,8 +10,28 @@ import (
 	"etm-go-chain/utils"
 	"fmt"
 	"github.com/astaxie/beego/orm"
+	"github.com/goinggo/mapstructure"
 	"reflect"
 	"sort"
+)
+
+const (
+	TRANSFER   uint8 = 0
+	DELEGATE   uint8 = 2
+	UNDELEGATE uint8 = 120
+	LOCK       uint8 = 101
+	UNLOCK     uint8 = 102
+	VOTE       uint8 = 3
+	DELAY      uint8 = 110
+	SECOND     uint8 = 1
+	MULTI      uint8 = 4
+
+	UIA_ISSUER   uint8 = 9
+	UIA_ASSET    uint8 = 10
+	UIA_FALG     uint8 = 11
+	UIA_ACL      uint8 = 12
+	UIA_ISSUE    uint8 = 13
+	UIA_TRANSFER uint8 = 14
 )
 
 func init() {
@@ -45,15 +65,28 @@ type Transaction struct {
 	Args      string   `json:"args"`
 	Message   string   `json:"message"`
 	Signature string   `json:"signature"`
+	Asset     Asset    `json:"asset" orm:"-"`
+}
+
+type Asset struct {
+	//Signature   TrSecond
+	Vote     TrVote
+	Delegate TrDelegate
+	//UiaIssuer   TrUiaIssuer
+	//UiaAsset    TrUiaAsset
+	//UiaFlags    TrUiaFlags
+	//UiaAcl      TrUiaAcl
+	//UiaIssue    TrUiaIssue
+	//UiaTransfer TrUiaTransfer
 }
 
 type TrData struct {
-	Type        uint8
-	Amount      int64
-	Fee         int64
-	Timestamp   int64
-	RecipientId string
-	//Asset          Asset
+	Type           uint8
+	Amount         int64
+	Fee            int64
+	Timestamp      int64
+	RecipientId    string
+	Asset          Asset
 	Args           []string
 	Message        string
 	Sender         Account
@@ -63,10 +96,10 @@ type TrData struct {
 	Username       string
 	Name           string
 	Desc           string
-	Maximun        string
+	Maximum        string
 	Precision      byte
 	Strategy       string
-	AllawWriteOff  byte
+	AllowWriteOff  byte
 	AllowWhiteList byte
 	AllowBlackList byte
 	Currency       string
@@ -78,14 +111,18 @@ type TrData struct {
 }
 
 type SubTr interface {
-	create(tr *Transaction, data TrData)
-	getBytes(tr *Transaction) []byte
+	create(tr *Transaction, data TrData) error
+	getBytes(tr *Transaction) ([]byte, error)
 }
 
 var trTypes = make(map[uint8]SubTr)
 
+func RegisterTrs(trType uint8, tr SubTr) {
+	trTypes[trType] = tr
+}
+
 func (t *Transaction) IsEmpty() bool {
-	return reflect.DeepEqual(t, Transaction{})
+	return t == nil || reflect.DeepEqual(t, Transaction{})
 }
 
 func (t *Transaction) Create(data TrData) error {
@@ -107,7 +144,7 @@ func (t *Transaction) Create(data TrData) error {
 	t.Args = string(args)
 	t.Message = data.Message
 
-	trTypes[data.Type].create(t, data) //构建对应子交易数据
+	err = trTypes[data.Type].create(t, data) //构建对应子交易数据
 
 	t.Signature, err = t.GetSignature(data.Keypair)
 	//if data.Type != 1 && !data.SecondKeypair.IsEmpty() {
@@ -120,10 +157,9 @@ func (t *Transaction) Create(data TrData) error {
 
 func (t *Transaction) GetBytes() ([]byte, error) {
 	var err error
-	assetBytes := trTypes[t.Type].getBytes(t)
+	assetBytes, err := trTypes[t.Type].getBytes(t)
 	assetSize := len(assetBytes)
 
-	//bb := bytes.NewBuffer(make([]byte, size+assetSize))
 	bb := bytes.NewBuffer([]byte{})
 
 	err = binary.Write(bb, binary.LittleEndian, uint8(t.Type))
@@ -133,11 +169,6 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 		senderPublicKeyBytes, _ := hex.DecodeString(t.Sender.PublicKey)
 		bb.Write(senderPublicKeyBytes)
 	}
-
-	//if !t.Requester.IsEmpty() {
-	//	requesterPublicKeyBytes, _ := hex.DecodeString(t.Requester.PublicKey)
-	//	bb.Write(requesterPublicKeyBytes)
-	//}
 
 	if !t.Recipient.IsEmpty() {
 		bb.WriteString(t.Recipient.Address)
@@ -153,11 +184,11 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 		bb.WriteString(string(t.Message))
 	}
 
-	if t.Args != "nil" {
-		var args []byte
-		err = json.Unmarshal(args, t.Args)
+	if t.Args != "" {
+		var args []string
+		err = json.Unmarshal([]byte(t.Args), &args)
 		for i := 0; i < len(args); i++ {
-			bb.WriteByte(args[i])
+			bb.WriteString(args[i])
 		}
 	}
 
@@ -165,15 +196,10 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 		bb.Write(assetBytes)
 	}
 
-	//if !skipSignature && tr.Signature != "" {
-	//	signatureBytes, _ := hex.DecodeString(tr.Signature)
-	//	bb.Write(signatureBytes)
-	//}
-	//
-	//if !skipSecondSignature && tr.SignSignature != "" {
-	//	signSignatureBytes, _ := hex.DecodeString(tr.SignSignature)
-	//	bb.Write(signSignatureBytes)
-	//}
+	if t.Signature != "" {
+		signatureBytes, _ := hex.DecodeString(t.Signature)
+		bb.Write(signatureBytes)
+	}
 
 	return bb.Bytes(), err
 }
@@ -219,24 +245,46 @@ func (t *Transaction) SetTransaction() error {
 
 func (t *Transaction) Trans2Transaction(data interface{}) (Transaction, error) {
 	var err error
-	o, ok := data.(map[string]interface{})
+	obj, ok := data.(map[string]interface{})
 
-	t.Id, ok = o["id"].(string)
-	if fv, ok := o["type"].(float64); ok {
-		t.Type = uint8(fv)
+	t.Id, ok = obj["id"].(string)
+	if ty, ok := obj["type"].(float64); ok {
+		t.Type = uint8(ty)
 	}
-	id, ok := o["blockId"].(string)
-	t.BlockId = &Block{Id: id,}
-	t.Fee, ok = o["fee"].(int64)
-	t.Amount, ok = o["amount"].(int64)
-	t.Timestamp, ok = o["timestamp"].(int64)
-	senderPublicKey, ok := o["senderPublicKey"].(string)
-	t.Sender = &Account{PublicKey: senderPublicKey,}
-	recipient, ok := o["recipientId"].(string)
-	t.Recipient = &Account{Address: recipient,}
-	t.Args, ok = o["args"].(string)
-	t.Message, ok = o["message"].(string)
-	t.Signature, ok = o["signature"].(string)
+	if obj["blockId"] != "" {
+		if id, ok := obj["blockId"].(string); ok {
+			t.BlockId = &Block{Id: id,}
+		}
+	}
+	if fee, ok := obj["fee"].(float64); ok {
+		t.Fee = int64(fee)
+	}
+	if amount, ok := obj["amount"].(float64); ok {
+		t.Amount = int64(amount)
+	}
+	if timestamp, ok := obj["timestamp"].(float64); ok {
+		t.Timestamp = int64(timestamp)
+	}
+	if senderPublicKey, ok := obj["senderPublicKey"].(string); ok && senderPublicKey != "" {
+		t.Sender = &Account{PublicKey: senderPublicKey,}
+	}
+	if recipient, ok := obj["recipientId"].(string); ok && recipient != "" {
+		t.Recipient = &Account{Address: recipient,}
+	}
+	if args, ok := obj["args"].([]interface{}); ok {
+		var bs []byte
+		if bs, err = json.Marshal(args); err != nil {
+			return *t, err
+		}
+		t.Args = string(bs)
+	}
+
+	t.Message, ok = obj["message"].(string)
+	t.Signature, ok = obj["signature"].(string)
+
+	if asset, ok := obj["asset"].(map[string]interface{}); ok {
+		err = mapstructure.Decode(asset, &t.Asset)
+	}
 
 	if !ok {
 		err = errors.New("Transform data to Transaction error")

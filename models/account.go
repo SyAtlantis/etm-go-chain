@@ -64,7 +64,7 @@ type Lock struct {
 }
 
 func (a *Account) IsEmpty() bool {
-	return reflect.DeepEqual(a, Account{})
+	return a == nil || reflect.DeepEqual(a, Account{})
 }
 
 func (a *Account) GetAccount() (Account, error) {

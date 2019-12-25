@@ -45,7 +45,7 @@ type Block struct {
 	Reward               int64     `json:"reward"`
 	PayloadHash          string    `json:"payloadHash" orm:"column(payloadHash)"`
 	PayloadLength        int       `json:"payloadLength" orm:"column(payloadLength)"`
-	PreviousBlock        *Block    `json:"previousBlock" orm:"column(previousBlock)"`
+	PreviousBlock        string    `json:"previousBlock" orm:"column(previousBlock)"`
 	Generator            *Delegate `json:"generator" orm:"rel(fk);column(generator_id)"`
 	BlockSignature       string    `json:"blockSignature" orm:"column(blockSignature)"`
 	NumberOfTransactions int       `json:"numberOfTransactions" orm:"column(numberOfTransactions)"`
@@ -60,7 +60,7 @@ type BlockData struct {
 }
 
 func (b *Block) IsEmpty() bool {
-	return reflect.DeepEqual(b, Block{})
+	return b == nil || reflect.DeepEqual(b, Block{})
 }
 
 func (b *Block) Create(data BlockData) error {
@@ -104,7 +104,7 @@ func (b *Block) Create(data BlockData) error {
 	b.Timestamp = data.Timestamp
 	b.NumberOfTransactions = len(blockTrs)
 	b.PayloadLength = size
-	b.PreviousBlock = &data.PreviousBlock
+	b.PreviousBlock = data.PreviousBlock.Id
 	b.Generator = &Delegate{}
 	b.Transactions = blockTrs
 
@@ -123,8 +123,8 @@ func (b *Block) GetBytes() ([]byte, error) {
 	err = binary.Write(bb, binary.LittleEndian, uint32(0)) //version
 	err = binary.Write(bb, binary.LittleEndian, uint32(b.Timestamp))
 
-	if !b.PreviousBlock.IsEmpty() {
-		bb.WriteString(b.PreviousBlock.Id)
+	if b.PreviousBlock != "" {
+		bb.WriteString(b.PreviousBlock)
 	} else {
 		bb.WriteString("0")
 	}
@@ -219,39 +219,38 @@ func (b *Block) Trans2Block(data interface{}) (Block, error) {
 	var err error
 	c, ok := data.(config.Configer)
 	if !ok {
-		err = errors.New("config not type of config.Configer")
-	} else {
-		b.Id = c.String("id")
-		b.Height, err = c.Int64("height")
-		b.Timestamp, err = c.Int64("timestamp")
-		b.TotalAmount, err = c.Int64("totalAmount")
-		b.TotalFee, err = c.Int64("totalFee")
-		b.Reward, err = c.Int64("reward")
-		b.PayloadHash = c.String("payloadHash")
-		b.PayloadLength, err = c.Int("payloadLength")
-		b.PreviousBlock = &Block{
-			Id: c.String("previousBlock"),
-		}
-		b.BlockSignature = c.String("blockSignature")
-		b.NumberOfTransactions, err = c.Int("numberOfTransactions")
-		b.Generator = &Delegate{
-			Username: c.String("generatorPublicKey"),
-		}
-		var transactions []*Transaction
-		trs, err := c.DIY("transactions")
-		if err != nil {
-			return *b, err
-		}
-		for _, tr := range trs.([]interface{}) {
-			t := Transaction{}
-			tt, err := t.Trans2Transaction(tr)
-			if err != nil {
-
-			}
-			transactions = append(transactions, &tt)
-		}
-		b.Transactions = transactions
+		return *b, errors.New("config not type of config.Configer")
 	}
+	b.Id = c.String("id")
+	b.Height, err = c.Int64("height")
+	b.Timestamp, err = c.Int64("timestamp")
+	b.TotalAmount, err = c.Int64("totalAmount")
+	b.TotalFee, err = c.Int64("totalFee")
+	b.Reward, err = c.Int64("reward")
+	b.PayloadHash = c.String("payloadHash")
+	b.PayloadLength, err = c.Int("payloadLength")
+	b.PreviousBlock = c.String("previousBlock")
+	b.BlockSignature = c.String("blockSignature")
+	b.NumberOfTransactions, err = c.Int("numberOfTransactions")
+	b.Generator = &Delegate{
+		Account: &Account{
+			PublicKey: c.String("generatorPublicKey"),
+		},
+	}
+	var transactions []*Transaction
+	trs, err2 := c.DIY("transactions")
+	if err2 != nil {
+		return *b, err2
+	}
+	for _, tr := range trs.([]interface{}) {
+		t := Transaction{}
+		tt, err3 := t.Trans2Transaction(tr)
+		if err3 != nil {
+			return *b, err3
+		}
+		transactions = append(transactions, &tt)
+	}
+	b.Transactions = transactions
 
 	return *b, err
 }
