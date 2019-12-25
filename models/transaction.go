@@ -56,7 +56,7 @@ type Transaction struct {
 	Key       int64    `orm:"pk;auto"`
 	Id        string   `json:"id"`
 	Type      uint8    `json:"type"`
-	BlockId   *Block   `json:"blockId" orm:"rel(fk);column(block_id)"`
+	BlockId   *Block   `json:"blockId" orm:"rel(fk);null;column(block_id)"`
 	Fee       int64    `json:"fee"`
 	Amount    int64    `json:"amount"`
 	Timestamp int64    `json:"timestamp"`
@@ -139,7 +139,7 @@ func (t *Transaction) Create(data TrData) error {
 	t.Fee = data.Fee
 	t.Timestamp = data.Timestamp
 	t.Sender = &Account{PublicKey: data.Sender.PublicKey}
-	//t.Asset = data.Asset
+	t.Asset = data.Asset
 	args, err := json.Marshal(data.Args)
 	t.Args = string(args)
 	t.Message = data.Message

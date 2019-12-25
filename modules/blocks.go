@@ -66,7 +66,7 @@ func (b *block) verifyBlock(mb models.Block) error {
 }
 
 func (b *block) verifyGenesisBlock(mb models.Block) error {
-	var size int
+	var payloadLength int
 	hash := sha256.New()
 	trs := mb.Transactions
 	for i := 0; i < len(trs); i++ {
@@ -74,11 +74,10 @@ func (b *block) verifyGenesisBlock(mb models.Block) error {
 		if err != nil {
 			return err
 		}
-		size += len(bs)
+		payloadLength += len(bs)
 		hash.Write(bs)
 	}
 	payloadHash := fmt.Sprintf("%x", hash.Sum([]byte{}))
-	payloadLength := size
 	id, err := mb.GetId()
 
 	if payloadLength != mb.PayloadLength || payloadHash != mb.PayloadHash || id != mb.Id || err != nil {
