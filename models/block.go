@@ -5,10 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"etm-go-chain/utils"
 	"fmt"
-	"github.com/astaxie/beego/config"
 	"github.com/astaxie/beego/orm"
 	"reflect"
 )
@@ -32,8 +30,6 @@ type iBlock interface {
 	VerifySignature() (bool error)
 	GetBlock() (Block, error)
 	SetBlock() error
-	Trans2Block(data interface{}) (Block, error)
-	Trans2Object() (map[string]interface{}, error)
 }
 
 type Block struct {
@@ -213,48 +209,4 @@ func (b *Block) SetBlock() error {
 	}
 
 	return o.Commit()
-}
-
-func (b *Block) Trans2Block(data interface{}) (Block, error) {
-	var err error
-	c, ok := data.(config.Configer)
-	if !ok {
-		return *b, errors.New("config not type of config.Configer")
-	}
-	b.Id = c.String("id")
-	b.Height, err = c.Int64("height")
-	b.Timestamp, err = c.Int64("timestamp")
-	b.TotalAmount, err = c.Int64("totalAmount")
-	b.TotalFee, err = c.Int64("totalFee")
-	b.Reward, err = c.Int64("reward")
-	b.PayloadHash = c.String("payloadHash")
-	b.PayloadLength, err = c.Int("payloadLength")
-	b.PreviousBlock = c.String("previousBlock")
-	b.BlockSignature = c.String("blockSignature")
-	b.NumberOfTransactions, err = c.Int("numberOfTransactions")
-	b.Generator = &Delegate{
-		Account: &Account{
-			PublicKey: c.String("generatorPublicKey"),
-		},
-	}
-	var transactions []*Transaction
-	trs, err2 := c.DIY("transactions")
-	if err2 != nil {
-		return *b, err2
-	}
-	for _, tr := range trs.([]interface{}) {
-		t := Transaction{}
-		tt, err3 := t.Trans2Transaction(tr)
-		if err3 != nil {
-			return *b, err3
-		}
-		transactions = append(transactions, &tt)
-	}
-	b.Transactions = transactions
-
-	return *b, err
-}
-
-func (b *Block) Trans2Object() (map[string]interface{}, error) {
-	panic("implement me")
 }

@@ -6,7 +6,8 @@ import (
 )
 
 func init() {
-	orm.RegisterModel(new(Account), new(Delegate), new(Vote), new(Lock))
+	orm.RegisterModel(new(Account))
+	orm.RegisterModelWithPrefix("account#", new(Delegate), new(Vote), new(Lock))
 }
 
 type iAccount interface {

@@ -8,14 +8,12 @@ import (
 )
 
 func init() {
-	//m := peer{}
-	//models.RegisterModels("peers", &m)
-
 	event.On("load", event.ListenerFunc(onLoadPeers), event.Normal)
 }
 
 type Peers interface {
 	GetPeers()
+	loadPeers() error
 }
 
 type peer struct {
@@ -30,7 +28,13 @@ func (p peer) GetPeers() {
 	panic("implement me")
 }
 
+func (p peer) loadPeers() error {
+	logs.Debug("load peers")
+	return nil
+}
+
 func onLoadPeers(e event.Event) error {
 	logs.Info("onload peers", e)
-	return nil
+	err := peers.loadPeers()
+	return err
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
 	"github.com/gookit/event"
 
 	"etm-go-chain/core"
@@ -20,6 +21,7 @@ type Blocks interface {
 	GenerateBlock() models.Block
 	ProcessBlock(mb models.Block) error
 
+	loadBlocksOffset(offset int64, limit int64) error
 	verifyBlock(mb models.Block) error
 	verifyGenesisBlock(mb models.Block) error
 	saveBlock(mb models.Block) error
@@ -59,9 +61,50 @@ func (b *block) ProcessBlock(mb models.Block) error {
 	return err
 }
 
+func (b *block) loadBlocksOffset(offset int64, limit int64) error {
+	// get blocks offset limit
+	// get block trs
+	// sort trs
+	// if no last block applyBlock
+	// else verifyBlock applyBlock
+	// set last block
+
+	o := orm.NewOrm()
+	qb := o.QueryTable("block")
+
+	count, err := qb.Count()
+	for count >= offset {
+		qb.Offset(offset).Limit(limit).OrderBy("height")
+		var n int64
+		var blockList []*models.Block
+		n, err = qb.All(&blockList)
+		if err == nil && n > 0 {
+			for _, blockItem := range blockList {
+				var trList models.Trs
+				qt := o.QueryTable("transaction")
+				n, err = qt.Filter("block_id", b.Height).All(&trList)
+				if err == nil && n > 0 {
+					trList.Sort()
+					blockItem.Transactions = trList
+				}
+
+				if systems.GetLastHeight() == 0 {
+					err = blocks.verifyBlock(*blockItem)
+				}
+				err = blocks.applyBlock(*blockItem)
+
+				err = systems.SetLastHeight(blockItem.Height)
+			}
+		}
+		offset += limit
+	}
+
+	return err
+}
+
 func (b *block) verifyBlock(mb models.Block) error {
 	var err error
-
+	logs.Debug("verify block")
 	return err
 }
 
@@ -98,7 +141,9 @@ func (b *block) saveBlock(mb models.Block) error {
 }
 
 func (b *block) applyBlock(mb models.Block) error {
-	panic("implement me")
+	var err error
+	logs.Debug("apply block")
+	return err
 }
 
 func onBindBlock(e event.Event) error {

@@ -10,7 +10,6 @@ import (
 	"etm-go-chain/utils"
 	"fmt"
 	"github.com/astaxie/beego/orm"
-	"github.com/goinggo/mapstructure"
 	"reflect"
 	"sort"
 )
@@ -48,15 +47,13 @@ type iTransaction interface {
 	VerifySignature() (bool error)
 	GetTransaction() (Transaction, error)
 	SetTransaction() error
-	Trans2Transaction(data interface{}) (Transaction, error)
-	Trans2Object() (map[string]interface{}, error)
 }
 
 type Transaction struct {
-	Key       int64    `orm:"pk;auto"`
-	Id        string   `json:"id"`
+	//Key       int64    `orm:"pk;auto"`
+	Id        string   `json:"id" orm:"pk"`
 	Type      uint8    `json:"type"`
-	BlockId   *Block   `json:"blockId" orm:"rel(fk);null;column(block_id)"`
+	BlockId   *Block   `json:"blockId" orm:"rel(fk);column(block_id)"`
 	Fee       int64    `json:"fee"`
 	Amount    int64    `json:"amount"`
 	Timestamp int64    `json:"timestamp"`
@@ -241,59 +238,6 @@ func (t *Transaction) SetTransaction() error {
 		err = errors.New("This transaction already exists in the db:" + string(id))
 	}
 	return err
-}
-
-func (t *Transaction) Trans2Transaction(data interface{}) (Transaction, error) {
-	var err error
-	obj, ok := data.(map[string]interface{})
-
-	t.Id, ok = obj["id"].(string)
-	if ty, ok := obj["type"].(float64); ok {
-		t.Type = uint8(ty)
-	}
-	if obj["blockId"] != "" {
-		if id, ok := obj["blockId"].(string); ok {
-			t.BlockId = &Block{Id: id,}
-		}
-	}
-	if fee, ok := obj["fee"].(float64); ok {
-		t.Fee = int64(fee)
-	}
-	if amount, ok := obj["amount"].(float64); ok {
-		t.Amount = int64(amount)
-	}
-	if timestamp, ok := obj["timestamp"].(float64); ok {
-		t.Timestamp = int64(timestamp)
-	}
-	if senderPublicKey, ok := obj["senderPublicKey"].(string); ok && senderPublicKey != "" {
-		t.Sender = &Account{PublicKey: senderPublicKey,}
-	}
-	if recipient, ok := obj["recipientId"].(string); ok && recipient != "" {
-		t.Recipient = &Account{Address: recipient,}
-	}
-	if args, ok := obj["args"].([]interface{}); ok {
-		var bs []byte
-		if bs, err = json.Marshal(args); err != nil {
-			return *t, err
-		}
-		t.Args = string(bs)
-	}
-
-	t.Message, ok = obj["message"].(string)
-	t.Signature, ok = obj["signature"].(string)
-
-	if asset, ok := obj["asset"].(map[string]interface{}); ok {
-		err = mapstructure.Decode(asset, &t.Asset)
-	}
-
-	if !ok {
-		err = errors.New("Transform data to Transaction error")
-	}
-	return *t, err
-}
-
-func (t *Transaction) Trans2Object() (map[string]interface{}, error) {
-	panic("implement me")
 }
 
 type Trs []*Transaction

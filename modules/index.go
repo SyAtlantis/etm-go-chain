@@ -4,7 +4,7 @@ var (
 	accounts     Accounts
 	blocks       Blocks
 	peers        Peers
-	system       System
+	systems      Systems
 	transactions Transactions
 )
 
@@ -12,6 +12,6 @@ func InitModules() {
 	accounts = NewAccounts()
 	blocks = NewBlocks()
 	peers = NewPeers()
-	system = NewSystem()
+	systems = NewSystems()
 	transactions = NewTransactions()
 }
