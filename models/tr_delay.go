@@ -11,9 +11,7 @@ func init() {
 }
 
 func (delay *TrDelay) create(tr *Transaction, data TrData) error {
-	tr.Recipient = &Account{
-		Address: data.RecipientId,
-	}
+	tr.Recipient = data.RecipientId
 	tr.Amount = data.Amount
 	args, err := json.Marshal(data.Args)
 	tr.Args = string(args)

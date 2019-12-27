@@ -2,13 +2,13 @@ package modules
 
 import (
 	"crypto/sha256"
+	"etm-go-chain/core"
+	"etm-go-chain/models"
 	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
+	"github.com/fatih/set"
 	"github.com/gookit/event"
-
-	"etm-go-chain/core"
-	"etm-go-chain/models"
 )
 
 func init() {
@@ -73,7 +73,7 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 	qb := o.QueryTable("block")
 
 	count, err := qb.Count()
-	for count >= offset {
+	for count > offset {
 		qb.Offset(offset).Limit(limit).OrderBy("height")
 		var n int64
 		var blockList []*models.Block
@@ -82,13 +82,13 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 			for _, blockItem := range blockList {
 				var trList models.Trs
 				qt := o.QueryTable("transaction")
-				n, err = qt.Filter("block_id", b.Height).All(&trList)
+				n, err = qt.Filter("block_id", blockItem.Height).All(&trList)
 				if err == nil && n > 0 {
-					trList.Sort()
+					//trList.Sort()
 					blockItem.Transactions = trList
 				}
 
-				if systems.GetLastHeight() == 0 {
+				if systems.GetLastHeight() != 0 {
 					err = blocks.verifyBlock(*blockItem)
 				}
 				err = blocks.applyBlock(*blockItem)
@@ -141,7 +141,36 @@ func (b *block) saveBlock(mb models.Block) error {
 }
 
 func (b *block) applyBlock(mb models.Block) error {
+	// get unconfirmedList
+	// undo unconfirmedList
+	// do apply
+
 	var err error
+	appliedTrIds := set.New(set.ThreadSafe)
+	trs := mb.Transactions
+	trs.Sort()
+	for _, tr := range trs {
+		if mb.Height == 1 {
+			// create account
+		} else {
+			// update account
+		}
+
+		if err = transactions.ApplyUnconfirmed(*tr); err != nil {
+			return err
+		}
+
+		if err = tr.Apply(); err != nil {
+			return err
+		}
+
+		if err = transactions.RemoveUnconfirmed(*tr); err != nil {
+			return err
+		}
+
+		appliedTrIds.Add(tr.Id)
+	}
+
 	logs.Debug("apply block")
 	return err
 }

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"etm-go-chain/utils"
 	"fmt"
+	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"reflect"
 	"sort"
@@ -45,30 +46,67 @@ type iTransaction interface {
 	GetId() (string, error)
 	GetSignature(utils.Keypair) (string, error)
 	VerifySignature() (bool error)
+	Verify() (bool error)
+	Process() error
+	Apply() error
+	Undo() error
+	ApplyUnconfirmed() error
+	UndoUnconfirmed() error
 	GetTransaction() (Transaction, error)
 	SetTransaction() error
 }
 
 type Transaction struct {
-	//Key       int64    `orm:"pk;auto"`
-	Id        string   `json:"id" orm:"pk"`
-	Type      uint8    `json:"type"`
-	BlockId   *Block   `json:"blockId" orm:"rel(fk);column(block_id)"`
-	Fee       int64    `json:"fee"`
-	Amount    int64    `json:"amount"`
-	Timestamp int64    `json:"timestamp"`
-	Sender    *Account `json:"sender" orm:"rel(fk);null"`
-	Recipient *Account `json:"recipient" orm:"rel(fk);null"`
-	Args      string   `json:"args"`
-	Message   string   `json:"message"`
-	Signature string   `json:"signature"`
-	Asset     Asset    `json:"asset" orm:"-"`
+	Key       int64  `orm:"pk;auto"`
+	Id        string `json:"id" `
+	Type      uint8  `json:"type"`
+	BlockId   *Block `json:"blockId" orm:"rel(fk);column(block_id)"`
+	Fee       int64  `json:"fee"`
+	Amount    int64  `json:"amount"`
+	Timestamp int64  `json:"timestamp"`
+	Sender    string `json:"sender"`
+	Recipient string `json:"recipient"`
+	Args      string `json:"args"`
+	Signature string `json:"signature"`
+}
+
+type TrData struct {
+	Id              string
+	Type            uint8
+	Amount          int64
+	Fee             int64
+	Timestamp       int64
+	RecipientId     string
+	SenderPublicKey string
+	Asset           Asset
+	Args            []string
+	Message         string
+	Signature       string
+	Sender          Account
+	Keypair         utils.Keypair
+	SecondKeypair   utils.Keypair
+	Votes           []string
+	Username        string
+	Name            string
+	Desc            string
+	Maximum         string
+	Precision       byte
+	Strategy        string
+	AllowWriteOff   byte
+	AllowWhiteList  byte
+	AllowBlackList  byte
+	Currency        string
+	UiaAmount       string
+	FlagType        byte
+	Flag            byte
+	Operator        string
+	List            []string
 }
 
 type Asset struct {
-	//Signature   TrSecond
 	Vote     TrVote
 	Delegate TrDelegate
+	//Signature   TrSecond
 	//UiaIssuer   TrUiaIssuer
 	//UiaAsset    TrUiaAsset
 	//UiaFlags    TrUiaFlags
@@ -77,34 +115,12 @@ type Asset struct {
 	//UiaTransfer TrUiaTransfer
 }
 
-type TrData struct {
-	Type           uint8
-	Amount         int64
-	Fee            int64
-	Timestamp      int64
-	RecipientId    string
-	Asset          Asset
-	Args           []string
-	Message        string
-	Sender         Account
-	Keypair        utils.Keypair
-	SecondKeypair  utils.Keypair
-	Votes          []string
-	Username       string
-	Name           string
-	Desc           string
-	Maximum        string
-	Precision      byte
-	Strategy       string
-	AllowWriteOff  byte
-	AllowWhiteList byte
-	AllowBlackList byte
-	Currency       string
-	UiaAmount      string
-	FlagType       byte
-	Flag           byte
-	Operator       string
-	List           []string
+type TrVote struct {
+	Votes []string
+}
+
+type TrDelegate struct {
+	Username string
 }
 
 type SubTr interface {
@@ -135,13 +151,13 @@ func (t *Transaction) Create(data TrData) error {
 	t.Amount = 0
 	t.Fee = data.Fee
 	t.Timestamp = data.Timestamp
-	t.Sender = &Account{PublicKey: data.Sender.PublicKey}
-	t.Asset = data.Asset
+	t.Sender = data.Sender.PublicKey
+	//t.Asset = data.Asset
 	args, err := json.Marshal(data.Args)
 	t.Args = string(args)
-	t.Message = data.Message
+	//t.Message = data.Message
 
-	err = trTypes[data.Type].create(t, data) //构建对应子交易数据
+	//err = trTypes[data.Type].create(t, data) //构建对应子交易数据
 
 	t.Signature, err = t.GetSignature(data.Keypair)
 	//if data.Type != 1 && !data.SecondKeypair.IsEmpty() {
@@ -162,13 +178,13 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 	err = binary.Write(bb, binary.LittleEndian, uint8(t.Type))
 	err = binary.Write(bb, binary.LittleEndian, uint32(t.Timestamp))
 
-	if !t.Sender.IsEmpty() {
-		senderPublicKeyBytes, _ := hex.DecodeString(t.Sender.PublicKey)
+	if t.Sender != "" {
+		senderPublicKeyBytes, _ := hex.DecodeString(t.Sender)
 		bb.Write(senderPublicKeyBytes)
 	}
 
-	if !t.Recipient.IsEmpty() {
-		bb.WriteString(t.Recipient.Address)
+	if t.Recipient != "" {
+		bb.WriteString(t.Recipient)
 	} else {
 		for i := 0; i < 8; i++ {
 			bb.WriteByte(0);
@@ -177,16 +193,17 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 
 	err = binary.Write(bb, binary.LittleEndian, uint64(t.Amount))
 
-	if t.Message != "" {
-		bb.WriteString(string(t.Message))
-	}
+	//if t.Message != "" {
+	//	bb.WriteString(string(t.Message))
+	//}
 
 	if t.Args != "" {
-		var args []string
-		err = json.Unmarshal([]byte(t.Args), &args)
-		for i := 0; i < len(args); i++ {
-			bb.WriteString(args[i])
-		}
+		//var args []string
+		//err = json.Unmarshal([]byte(t.Args), &args)
+		//for i := 0; i < len(args); i++ {
+		//	bb.WriteString(args[i])
+		//}
+		bb.WriteString(t.Args)
 	}
 
 	if assetSize > 0 {
@@ -219,6 +236,31 @@ func (t *Transaction) GetSignature(keypair utils.Keypair) (string, error) {
 }
 
 func (t *Transaction) VerifySignature() (bool error) {
+	panic("implement me")
+}
+
+func (t *Transaction) Verify() (bool error) {
+	panic("implement me")
+}
+
+func (t *Transaction) Process() error {
+	panic("implement me")
+}
+
+func (t *Transaction) Apply() error {
+	logs.Debug("Transaction Apply")
+	return nil
+}
+
+func (t *Transaction) Undo() error {
+	panic("implement me")
+}
+
+func (t *Transaction) ApplyUnconfirmed() error {
+	panic("implement me")
+}
+
+func (t *Transaction) UndoUnconfirmed() error {
 	panic("implement me")
 }
 

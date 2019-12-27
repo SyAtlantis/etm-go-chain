@@ -5,6 +5,7 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/beego/i18n"
 	"github.com/gookit/event"
+	"time"
 
 	"etm-go-chain/core"
 	"etm-go-chain/modules"
@@ -61,14 +62,20 @@ func initI18n() {
 }
 
 func main() {
-	err, _ := event.Fire("bind", event.M{})
-	if err != nil {
+	// 启动线程执行出块流程
+	go start()
+
+	// 启动服务
+	beego.Run()
+}
+
+func start() {
+	time.Sleep(1 * time.Second)
+	if err, _ := event.Fire("bind", event.M{}); err != nil {
 		panic(err)
 	}
+
 	//_, _ = event.Fire("load", event.M{"name": "bbb"})
 	//time.Sleep(10*time.Second)
 	//_, _ = event.Fire("ready", event.M{"name": "ccc"})
-
-	// 启动
-	beego.Run()
 }

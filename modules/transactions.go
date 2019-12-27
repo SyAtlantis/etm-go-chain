@@ -18,10 +18,10 @@ type Transactions interface {
 
 	hasUnconfirmed() bool
 	GetUnconfirmed() ([]models.Transaction, error)
-	RemoveUnconfirmed() error
-	ProcessUnconfirmed() error
-	ApplyUnconfirmed() error
-	UndoUnconfirmed() error
+	RemoveUnconfirmed(tr models.Transaction) error
+	ProcessUnconfirmed(tr models.Transaction) error
+	ApplyUnconfirmed(tr models.Transaction) error
+	UndoUnconfirmed(tr models.Transaction) error
 }
 
 type transaction struct {
@@ -56,19 +56,21 @@ func (t transaction) GetUnconfirmed() ([]models.Transaction, error) {
 	panic("implement me")
 }
 
-func (t transaction) RemoveUnconfirmed() error {
+func (t transaction) RemoveUnconfirmed(tr models.Transaction) error {
+	logs.Debug("Remove Unconfirmed transaction")
+	return nil
+}
+
+func (t transaction) ProcessUnconfirmed(tr models.Transaction) error {
 	panic("implement me")
 }
 
-func (t transaction) ProcessUnconfirmed() error {
-	panic("implement me")
+func (t transaction) ApplyUnconfirmed(tr models.Transaction) error {
+	logs.Debug("Apply Unconfirmed transaction")
+	return nil
 }
 
-func (t transaction) ApplyUnconfirmed() error {
-	panic("implement me")
-}
-
-func (t transaction) UndoUnconfirmed() error {
+func (t transaction) UndoUnconfirmed(tr models.Transaction) error {
 	panic("implement me")
 }
 

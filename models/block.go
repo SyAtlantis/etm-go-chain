@@ -33,19 +33,19 @@ type iBlock interface {
 }
 
 type Block struct {
-	Id                   string    `json:"id"`
-	Height               int64     `json:"height" orm:"pk"`
-	Timestamp            int64     `json:"timestamp"`
-	TotalAmount          int64     `json:"totalAmount" orm:"column(totalAmount)"`
-	TotalFee             int64     `json:"totalFee" orm:"column(totalFee)"`
-	Reward               int64     `json:"reward"`
-	PayloadHash          string    `json:"payloadHash" orm:"column(payloadHash)"`
-	PayloadLength        int       `json:"payloadLength" orm:"column(payloadLength)"`
-	PreviousBlock        string    `json:"previousBlock" orm:"column(previousBlock)"`
-	Generator            *Delegate `json:"generator" orm:"rel(fk);column(generator_id)"`
-	BlockSignature       string    `json:"blockSignature" orm:"column(blockSignature)"`
-	NumberOfTransactions int       `json:"numberOfTransactions" orm:"column(numberOfTransactions)"`
-	Transactions         Trs       `json:"transactions" orm:"reverse(many)"`
+	Id                   string `json:"id"`
+	Height               int64  `json:"height" orm:"pk"`
+	Timestamp            int64  `json:"timestamp"`
+	TotalAmount          int64  `json:"totalAmount" orm:"column(totalAmount)"`
+	TotalFee             int64  `json:"totalFee" orm:"column(totalFee)"`
+	Reward               int64  `json:"reward"`
+	PayloadHash          string `json:"payloadHash" orm:"column(payloadHash)"`
+	PayloadLength        int    `json:"payloadLength" orm:"column(payloadLength)"`
+	PreviousBlock        string `json:"previousBlock" orm:"column(previousBlock)"`
+	Generator            string `json:"generator"`
+	BlockSignature       string `json:"blockSignature" orm:"column(blockSignature)"`
+	NumberOfTransactions int    `json:"numberOfTransactions" orm:"column(numberOfTransactions)"`
+	Transactions         Trs    `json:"transactions" orm:"reverse(many)"`
 }
 
 type BlockData struct {
@@ -101,7 +101,7 @@ func (b *Block) Create(data BlockData) error {
 	b.NumberOfTransactions = len(blockTrs)
 	b.PayloadLength = size
 	b.PreviousBlock = data.PreviousBlock.Id
-	b.Generator = &Delegate{}
+	b.Generator = fmt.Sprintf("%x", data.Keypair.PublicKey)
 	b.Transactions = blockTrs
 
 	b.BlockSignature, err = b.GetSignature(data.Keypair)
@@ -134,7 +134,7 @@ func (b *Block) GetBytes() ([]byte, error) {
 	payloadHashBytes, _ := hex.DecodeString(b.PayloadHash)
 	bb.Write(payloadHashBytes)
 
-	generatorPublicKeyBytes, _ := hex.DecodeString(b.Generator.Account.PublicKey)
+	generatorPublicKeyBytes, _ := hex.DecodeString(b.Generator)
 	bb.Write(generatorPublicKeyBytes)
 
 	if b.BlockSignature != "" {

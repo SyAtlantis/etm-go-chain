@@ -16,8 +16,6 @@ type iAccount interface {
 	SetAccount() error
 	GetAccounts() ([]Account, error)
 	SetAccounts(as []Account) error
-	Trans2Account(data interface{}) (Account, error)
-	Trans2Object() (map[string]interface{}, error)
 }
 
 type Account struct {
@@ -88,10 +86,3 @@ func (a *Account) SetAccounts(as []Account) error {
 	panic("implement me")
 }
 
-func (a *Account) Trans2Account(data interface{}) (Account, error) {
-	panic("implement me")
-}
-
-func (a *Account) Trans2Object() (map[string]interface{}, error) {
-	panic("implement me")
-}

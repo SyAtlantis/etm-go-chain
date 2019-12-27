@@ -9,9 +9,7 @@ func init() {
 }
 
 func (transfer *TrTransfer) create(tr *Transaction, data TrData) error {
-	tr.Recipient = &Account{
-		Address: data.RecipientId,
-	}
+	tr.Recipient = data.RecipientId
 	tr.Amount = data.Amount
 	return nil
 }

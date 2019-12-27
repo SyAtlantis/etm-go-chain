@@ -7,6 +7,7 @@ require (
 	github.com/anaskhan96/base58check v0.0.0-20181220122047-b05365d494c4
 	github.com/astaxie/beego v1.12.0
 	github.com/beego/i18n v0.0.0-20161101132742-e9308947f407
+	github.com/fatih/set v0.2.1
 	github.com/go-xorm/xorm v0.7.9 // indirect
 	github.com/goinggo/mapstructure v0.0.0-20140717182941-194205d9b4a9
 	github.com/gookit/event v1.0.3

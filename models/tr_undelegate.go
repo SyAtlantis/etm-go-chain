@@ -9,9 +9,7 @@ func init() {
 }
 
 func (undelegate *TrUndelegate) create(tr *Transaction, data TrData) error {
-	tr.Recipient = &Account{
-		Address: "",
-	}
+	tr.Recipient = ""
 	tr.Amount = 0
 	return nil
 }
