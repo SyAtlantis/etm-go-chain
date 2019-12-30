@@ -18,8 +18,8 @@ func init() {
 type Blocks interface {
 	GetBlocks() []models.Block
 
-	GenerateBlock() models.Block
-	ProcessBlock(mb models.Block) error
+	generateBlock() models.Block
+	processBlock(mb models.Block) error
 
 	loadBlocksOffset(offset int64, limit int64) error
 	verifyBlock(mb models.Block) error
@@ -40,11 +40,11 @@ func (b *block) GetBlocks() []models.Block {
 	panic("implement me")
 }
 
-func (b *block) GenerateBlock() models.Block {
+func (b *block) generateBlock() models.Block {
 	panic("implement me")
 }
 
-func (b *block) ProcessBlock(mb models.Block) error {
+func (b *block) processBlock(mb models.Block) error {
 	//trs := b.Transactions
 	//for _, tr := range trs {
 	//	err := transactions.ProcessTransaction(*tr)
@@ -73,6 +73,9 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 	qb := o.QueryTable("block")
 
 	count, err := qb.Count()
+	if err != nil {
+		return err
+	}
 	for count > offset {
 		qb.Offset(offset).Limit(limit).OrderBy("height")
 		var n int64
@@ -89,11 +92,16 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 				}
 
 				if systems.GetLastHeight() != 0 {
-					err = blocks.verifyBlock(*blockItem)
+					if err = blocks.verifyBlock(*blockItem); err != nil {
+						return err
+					}
 				}
-				err = blocks.applyBlock(*blockItem)
-
-				err = systems.SetLastHeight(blockItem.Height)
+				if err = blocks.applyBlock(*blockItem); err != nil {
+					return err
+				}
+				if err = systems.SetLastHeight(blockItem.Height); err != nil {
+					return err
+				}
 			}
 		}
 		offset += limit
@@ -150,23 +158,32 @@ func (b *block) applyBlock(mb models.Block) error {
 	trs := mb.Transactions
 	trs.Sort()
 	for _, tr := range trs {
-		if mb.Height == 1 {
-			// create account
-		} else {
-			// update account
-		}
-
-		if err = transactions.ApplyUnconfirmed(*tr); err != nil {
+		//if mb.Height == 1 {
+		//	// create account
+		//} else {
+		//	// update account
+		//}
+		sender, err := accounts.loadSender(tr.Sender)
+		if err != nil {
 			return err
 		}
 
-		if err = tr.Apply(); err != nil {
+		recipient, err := accounts.loadRecipient(tr.Recipient)
+		if err != nil {
 			return err
 		}
 
-		if err = transactions.RemoveUnconfirmed(*tr); err != nil {
+		//if err = transactions.applyUnconfirmed(*tr); err != nil {
+		//	return err
+		//}
+
+		if err = tr.Apply(sender, recipient); err != nil {
 			return err
 		}
+
+		//if err = transactions.removeUnconfirmed(*tr); err != nil {
+		//	return err
+		//}
 
 		appliedTrIds.Add(tr.Id)
 	}

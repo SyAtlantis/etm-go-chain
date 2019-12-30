@@ -79,6 +79,8 @@ func Trans2Transaction(data interface{}, b models.Block) (t models.Transaction, 
 		t.Timestamp = trData.Timestamp
 		t.Sender = trData.SenderPublicKey
 		t.Recipient = trData.RecipientId
+		
+		// Args.Asset全部存在Args中
 		if trData.Args != nil && len(trData.Args) > 0 {
 			t.Args = trData.Args[0]
 		} else {
@@ -86,6 +88,7 @@ func Trans2Transaction(data interface{}, b models.Block) (t models.Transaction, 
 				t.Args = trData.Asset.Delegate.Username
 			}
 			if trData.Asset.Vote.Votes != nil {
+				// vote中投票和取消投票分离
 				t.Args = trData.Asset.Vote.Votes[0]
 			}
 		}

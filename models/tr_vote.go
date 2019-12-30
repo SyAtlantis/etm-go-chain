@@ -2,9 +2,9 @@ package models
 
 import "bytes"
 
-//type TrVote struct {
-//	Votes []string
-//}
+type TrVote struct {
+	Votes []string
+}
 
 func init() {
 	tr := TrVote{}
@@ -23,4 +23,28 @@ func (vote *TrVote) getBytes(tr *Transaction) ([]byte, error) {
 	//}
 
 	return bb.Bytes(), nil
+}
+
+func (vote *TrVote) verify(tr *Transaction) (bool error) {
+	panic("implement me")
+}
+
+func (vote *TrVote) process(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (vote *TrVote) apply(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (vote *TrVote) undo(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (vote *TrVote) applyUnconfirmed(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (vote *TrVote) undoUnconfirmed(tr *Transaction) error {
+	panic("implement me")
 }

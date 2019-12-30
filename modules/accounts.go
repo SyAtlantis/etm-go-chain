@@ -1,6 +1,8 @@
 package modules
 
 import (
+	"errors"
+	"etm-go-chain/utils"
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
 
@@ -13,6 +15,8 @@ func init() {
 
 type Accounts interface {
 	GetAccounts()
+	loadSender(string) (models.Account, error)
+	loadRecipient(string) (models.Account, error)
 }
 
 type account struct {
@@ -25,6 +29,28 @@ func NewAccounts() Accounts {
 
 func (a account) GetAccounts() {
 	panic("implement me")
+}
+
+func (a account) loadSender(sender string) (models.Account, error) {
+	acc := models.Account{}
+	if sender == "" {
+		return acc, errors.New("no sender to load")
+	}
+
+	Address := utils.Address{}
+	acc.PublicKey = sender
+	acc.Address = Address.GenerateAddresss([]byte(sender))
+	return acc, acc.SetAccount()
+}
+
+func (a account) loadRecipient(recipient string) (models.Account, error) {
+	acc := models.Account{}
+	if recipient == "" {
+		return acc, errors.New("no recipient to load")
+	}
+
+	acc.Address = recipient
+	return acc, acc.SetAccount()
 }
 
 func onLoadAccounts(e event.Event) error {

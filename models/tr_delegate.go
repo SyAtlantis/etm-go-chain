@@ -3,11 +3,10 @@ package models
 import (
 	"bytes"
 )
-//
-//type TrDelegate struct {
-//	Username  string
-//	PublicKey string
-//}
+
+type TrDelegate struct {
+	Username string
+}
 
 func init() {
 	tr := TrDelegate{}
@@ -29,4 +28,28 @@ func (delegate *TrDelegate) getBytes(tr *Transaction) ([]byte, error) {
 	//bb.WriteString(tr.Asset.Delegate.Username)
 
 	return bb.Bytes(), nil
+}
+
+func (delegate *TrDelegate) verify(tr *Transaction) (bool error) {
+	panic("implement me")
+}
+
+func (delegate *TrDelegate) process(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (delegate *TrDelegate) apply(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (delegate *TrDelegate) undo(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (delegate *TrDelegate) applyUnconfirmed(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (delegate *TrDelegate) undoUnconfirmed(tr *Transaction) error {
+	panic("implement me")
 }

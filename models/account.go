@@ -12,6 +12,7 @@ func init() {
 
 type iAccount interface {
 	IsEmpty() bool
+	Merge() error
 	GetAccount() (Account, error)
 	SetAccount() error
 	GetAccounts() ([]Account, error)
@@ -66,6 +67,13 @@ func (a *Account) IsEmpty() bool {
 	return a == nil || reflect.DeepEqual(a, Account{})
 }
 
+func (a *Account) Merge() error {
+	o := orm.NewOrm()
+	_, err := o.Update(a)
+	//logs.Debug("Merge account")
+	return err
+}
+
 func (a *Account) GetAccount() (Account, error) {
 	o := orm.NewOrm()
 	err := o.Read(&a)
@@ -83,6 +91,7 @@ func (a *Account) GetAccounts() ([]Account, error) {
 }
 
 func (a *Account) SetAccounts(as []Account) error {
-	panic("implement me")
+	o := orm.NewOrm()
+	_, _, err := o.ReadOrCreate(a, "Address")
+	return err
 }
-

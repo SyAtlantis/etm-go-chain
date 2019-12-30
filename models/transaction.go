@@ -9,7 +9,6 @@ import (
 	"errors"
 	"etm-go-chain/utils"
 	"fmt"
-	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"reflect"
 	"sort"
@@ -48,8 +47,8 @@ type iTransaction interface {
 	VerifySignature() (bool error)
 	Verify() (bool error)
 	Process() error
-	Apply() error
-	Undo() error
+	Apply(sender Account, recipient Account) error
+	Undo(sender Account, recipient Account) error
 	ApplyUnconfirmed() error
 	UndoUnconfirmed() error
 	GetTransaction() (Transaction, error)
@@ -76,8 +75,8 @@ type TrData struct {
 	Amount          int64
 	Fee             int64
 	Timestamp       int64
-	RecipientId     string
 	SenderPublicKey string
+	RecipientId     string
 	Asset           Asset
 	Args            []string
 	Message         string
@@ -115,17 +114,15 @@ type Asset struct {
 	//UiaTransfer TrUiaTransfer
 }
 
-type TrVote struct {
-	Votes []string
-}
-
-type TrDelegate struct {
-	Username string
-}
-
 type SubTr interface {
 	create(tr *Transaction, data TrData) error
 	getBytes(tr *Transaction) ([]byte, error)
+	verify(tr *Transaction) (bool error)
+	process(tr *Transaction) error
+	apply(tr *Transaction) error
+	undo(tr *Transaction) error
+	applyUnconfirmed(tr *Transaction) error
+	undoUnconfirmed(tr *Transaction) error
 }
 
 var trTypes = make(map[uint8]SubTr)
@@ -141,10 +138,10 @@ func (t *Transaction) IsEmpty() bool {
 func (t *Transaction) Create(data TrData) error {
 	var err error
 	if data.Sender.IsEmpty() {
-		return err
+		return errors.New("sender is empty")
 	}
 	if data.Keypair.IsEmpty() {
-		return err
+		return errors.New("keypair is empty")
 	}
 
 	t.Type = data.Type
@@ -152,10 +149,10 @@ func (t *Transaction) Create(data TrData) error {
 	t.Fee = data.Fee
 	t.Timestamp = data.Timestamp
 	t.Sender = data.Sender.PublicKey
-	//t.Asset = data.Asset
 	args, err := json.Marshal(data.Args)
 	t.Args = string(args)
 	//t.Message = data.Message
+	//t.Asset = data.Asset
 
 	//err = trTypes[data.Type].create(t, data) //构建对应子交易数据
 
@@ -170,8 +167,8 @@ func (t *Transaction) Create(data TrData) error {
 
 func (t *Transaction) GetBytes() ([]byte, error) {
 	var err error
-	assetBytes, err := trTypes[t.Type].getBytes(t)
-	assetSize := len(assetBytes)
+	//assetBytes, err := trTypes[t.Type].getBytes(t)
+	//assetSize := len(assetBytes)
 
 	bb := bytes.NewBuffer([]byte{})
 
@@ -206,9 +203,9 @@ func (t *Transaction) GetBytes() ([]byte, error) {
 		bb.WriteString(t.Args)
 	}
 
-	if assetSize > 0 {
-		bb.Write(assetBytes)
-	}
+	//if assetSize > 0 {
+	//	bb.Write(assetBytes)
+	//}
 
 	if t.Signature != "" {
 		signatureBytes, _ := hex.DecodeString(t.Signature)
@@ -247,12 +244,25 @@ func (t *Transaction) Process() error {
 	panic("implement me")
 }
 
-func (t *Transaction) Apply() error {
-	logs.Debug("Transaction Apply")
+func (t *Transaction) Apply(sender Account, recipient Account) error {
+
+	amount := t.Amount + t.Fee
+	if t.BlockId.Height != 1 && sender.Balance < amount {
+		return errors.New("Insufficient balance: " + string(sender.Balance))
+	}
+	sender.Balance -= amount
+	if err := sender.Merge(); err != nil {
+		return err
+	}
+
+	//if err := trTypes[t.Type].apply(t); err != nil {
+	//	return err
+	//}
+
 	return nil
 }
 
-func (t *Transaction) Undo() error {
+func (t *Transaction) Undo(sender Account, recipient Account) error {
 	panic("implement me")
 }
 

@@ -17,3 +17,27 @@ func (transfer *TrTransfer) create(tr *Transaction, data TrData) error {
 func (transfer *TrTransfer) getBytes(tr *Transaction) ([]byte, error) {
 	return nil, nil
 }
+
+func (transfer *TrTransfer) verify(tr *Transaction) (bool error) {
+	panic("implement me")
+}
+
+func (transfer *TrTransfer) process(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (transfer *TrTransfer) apply(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (transfer *TrTransfer) undo(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (transfer *TrTransfer) applyUnconfirmed(tr *Transaction) error {
+	panic("implement me")
+}
+
+func (transfer *TrTransfer) undoUnconfirmed(tr *Transaction) error {
+	panic("implement me")
+}
