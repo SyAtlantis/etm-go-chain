@@ -1,6 +1,9 @@
 package models
 
-import "bytes"
+import (
+	"bytes"
+	"errors"
+)
 
 type TrVote struct {
 	Votes []string
@@ -34,7 +37,23 @@ func (vote *TrVote) process(tr *Transaction) error {
 }
 
 func (vote *TrVote) apply(tr *Transaction) error {
-	panic("implement me")
+	sender := tr.SAccount
+	if sender.IsEmpty() {
+		return errors.New("sender account is empty")
+	}
+	sender.Vote = &Vote{
+		Delegate: &Delegate{
+			Account: &Account{
+				PublicKey: tr.Args,
+			},
+		},
+		TransactionId: &Transaction{
+			Id: tr.Id,
+		},
+	}
+	err := sender.SetAccount()
+
+	return err
 }
 
 func (vote *TrVote) undo(tr *Transaction) error {

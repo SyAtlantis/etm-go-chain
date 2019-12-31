@@ -1,6 +1,10 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+	"strconv"
+)
 
 type TrLock struct {
 }
@@ -29,7 +33,24 @@ func (lock *TrLock) process(tr *Transaction) error {
 }
 
 func (lock *TrLock) apply(tr *Transaction) error {
-	panic("implement me")
+	sender := tr.SAccount
+	if sender.IsEmpty() {
+		return errors.New("sender account is empty")
+	}
+	lockAmount, err := strconv.ParseInt(tr.Args, 10, 64)
+	if err != nil {
+		 return  errors.New("lock amount is not the type of int64")
+	}
+	l := &Lock{
+		LockAmount: lockAmount,
+		TransactionId: &Transaction{
+			Id: tr.Id,
+		},
+	}
+	sender.Locks = append(sender.Locks, l)
+	err = sender.SetAccount()
+
+	return err
 }
 
 func (lock *TrLock) undo(tr *Transaction) error {

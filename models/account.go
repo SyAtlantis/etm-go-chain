@@ -82,8 +82,27 @@ func (a *Account) GetAccount() (Account, error) {
 
 func (a *Account) SetAccount() error {
 	o := orm.NewOrm()
-	_, _, err := o.ReadOrCreate(a, "Address")
-	return err
+
+	if a.Delegate != nil {
+		if _, _, err := o.ReadOrCreate(a.Delegate, "TransactionId"); err != nil {
+			return err
+		}
+	}
+	if a.Vote != nil {
+		if _, _, err := o.ReadOrCreate(a.Vote, "TransactionId"); err != nil {
+			return err
+		}
+	}
+	if a.Locks != nil {
+		if _, _, err := o.ReadOrCreate(a.Locks[0], "TransactionId"); err != nil {
+			return err
+		}
+	}
+
+	if _, _, err := o.ReadOrCreate(a, "Address"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Account) GetAccounts() ([]Account, error) {

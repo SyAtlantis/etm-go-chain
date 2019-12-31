@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/orm"
 	"reflect"
-	"sort"
 )
 
 const (
@@ -47,8 +46,8 @@ type iTransaction interface {
 	VerifySignature() (bool error)
 	Verify() (bool error)
 	Process() error
-	Apply(sender Account, recipient Account) error
-	Undo(sender Account, recipient Account) error
+	Apply() error
+	Undo() error
 	ApplyUnconfirmed() error
 	UndoUnconfirmed() error
 	GetTransaction() (Transaction, error)
@@ -56,17 +55,19 @@ type iTransaction interface {
 }
 
 type Transaction struct {
-	Key       int64  `orm:"pk;auto"`
-	Id        string `json:"id" `
-	Type      uint8  `json:"type"`
-	BlockId   *Block `json:"blockId" orm:"rel(fk);column(block_id)"`
-	Fee       int64  `json:"fee"`
-	Amount    int64  `json:"amount"`
-	Timestamp int64  `json:"timestamp"`
-	Sender    string `json:"sender"`
-	Recipient string `json:"recipient"`
-	Args      string `json:"args"`
-	Signature string `json:"signature"`
+	Key       int64   `orm:"pk;auto"`
+	Id        string  `json:"id" `
+	Type      uint8   `json:"type"`
+	BlockId   *Block  `json:"blockId" orm:"rel(fk);column(block_id)"`
+	Fee       int64   `json:"fee"`
+	Amount    int64   `json:"amount"`
+	Timestamp int64   `json:"timestamp"`
+	Sender    string  `json:"sender"`
+	Recipient string  `json:"recipient"`
+	Args      string  `json:"args"`
+	Signature string  `json:"signature"`
+	SAccount  Account `json:"sAccount" orm:"-"`
+	PAccount  Account `json:"pAccount" orm:"-"`
 }
 
 type TrData struct {
@@ -244,7 +245,11 @@ func (t *Transaction) Process() error {
 	panic("implement me")
 }
 
-func (t *Transaction) Apply(sender Account, recipient Account) error {
+func (t *Transaction) Apply() error {
+	sender := t.SAccount
+	if sender.IsEmpty() {
+		return errors.New("sender account is empty")
+	}
 
 	amount := t.Amount + t.Fee
 	if t.BlockId.Height != 1 && sender.Balance < amount {
@@ -255,14 +260,14 @@ func (t *Transaction) Apply(sender Account, recipient Account) error {
 		return err
 	}
 
-	//if err := trTypes[t.Type].apply(t); err != nil {
-	//	return err
-	//}
+	if err := trTypes[t.Type].apply(t); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (t *Transaction) Undo(sender Account, recipient Account) error {
+func (t *Transaction) Undo() error {
 	panic("implement me")
 }
 
@@ -290,38 +295,4 @@ func (t *Transaction) SetTransaction() error {
 		err = errors.New("This transaction already exists in the db:" + string(id))
 	}
 	return err
-}
-
-type Trs []*Transaction
-
-type iTransactions interface {
-	Sort()
-}
-
-func (trs Trs) Len() int {
-	return len(trs)
-}
-
-func (trs Trs) Swap(i, j int) {
-	trs[i], trs[j] = trs[j], trs[i]
-}
-
-func (trs Trs) Less(i, j int) bool {
-	if trs[i].Type != trs[j].Type {
-		if trs[i].Type == 1 {
-			return true
-		}
-		if trs[j].Type == 1 {
-			return false
-		}
-		return trs[i].Type > trs[j].Type
-	}
-	if trs[i].Amount != trs[j].Amount {
-		return trs[i].Amount > trs[j].Amount
-	}
-	return trs[i].Id > trs[j].Id
-}
-
-func (trs Trs) Sort() {
-	sort.Sort(trs)
 }

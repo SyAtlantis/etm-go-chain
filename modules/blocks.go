@@ -78,28 +78,24 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 	}
 	for count > offset {
 		qb.Offset(offset).Limit(limit).OrderBy("height")
-		var n int64
 		var blockList []*models.Block
-		n, err = qb.All(&blockList)
-		if err == nil && n > 0 {
+		if n, err := qb.All(&blockList); err == nil && n > 0 {
 			for _, blockItem := range blockList {
 				var trList models.Trs
 				qt := o.QueryTable("transaction")
-				n, err = qt.Filter("block_id", blockItem.Height).All(&trList)
-				if err == nil && n > 0 {
-					//trList.Sort()
+				if n, err := qt.Filter("block_id", blockItem.Height).All(&trList); err == nil && n > 0 {
 					blockItem.Transactions = trList
 				}
 
 				if systems.GetLastHeight() != 0 {
-					if err = blocks.verifyBlock(*blockItem); err != nil {
+					if err := blocks.verifyBlock(*blockItem); err != nil {
 						return err
 					}
 				}
-				if err = blocks.applyBlock(*blockItem); err != nil {
+				if err := blocks.applyBlock(*blockItem); err != nil {
 					return err
 				}
-				if err = systems.SetLastHeight(blockItem.Height); err != nil {
+				if err := systems.SetLastHeight(blockItem.Height); err != nil {
 					return err
 				}
 			}
@@ -107,7 +103,7 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 		offset += limit
 	}
 
-	return err
+	return nil
 }
 
 func (b *block) verifyBlock(mb models.Block) error {
@@ -163,21 +159,21 @@ func (b *block) applyBlock(mb models.Block) error {
 		//} else {
 		//	// update account
 		//}
-		sender, err := accounts.loadSender(tr.Sender)
-		if err != nil {
+		if tr.SAccount, err = accounts.loadSender(tr.Sender); err != nil {
 			return err
 		}
 
-		recipient, err := accounts.loadRecipient(tr.Recipient)
-		if err != nil {
-			return err
+		if tr.Recipient != "" {
+			if tr.PAccount, err = accounts.loadRecipient(tr.Recipient); err != nil {
+				return err
+			}
 		}
 
 		//if err = transactions.applyUnconfirmed(*tr); err != nil {
 		//	return err
 		//}
 
-		if err = tr.Apply(sender, recipient); err != nil {
+		if err = tr.Apply(); err != nil {
 			return err
 		}
 

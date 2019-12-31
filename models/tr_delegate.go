@@ -2,6 +2,7 @@ package models
 
 import (
 	"bytes"
+	"errors"
 )
 
 type TrDelegate struct {
@@ -39,7 +40,19 @@ func (delegate *TrDelegate) process(tr *Transaction) error {
 }
 
 func (delegate *TrDelegate) apply(tr *Transaction) error {
-	panic("implement me")
+	sender := tr.SAccount
+	if sender.IsEmpty() {
+		return errors.New("sender account is empty")
+	}
+	sender.Delegate = &Delegate{
+		Username: tr.Args,
+		TransactionId: &Transaction{
+			Id: tr.Id,
+		},
+	}
+	err := sender.SetAccount()
+
+	return err
 }
 
 func (delegate *TrDelegate) undo(tr *Transaction) error {
