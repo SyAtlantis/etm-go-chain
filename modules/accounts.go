@@ -15,6 +15,7 @@ func init() {
 
 type Accounts interface {
 	GetAccounts()
+	RemoveTables() error
 	loadSender(string) (models.Account, error)
 	loadRecipient(string) (models.Account, error)
 }
@@ -29,6 +30,11 @@ func NewAccounts() Accounts {
 
 func (a account) GetAccounts() {
 	panic("implement me")
+}
+
+func (a account) RemoveTables() error {
+	err := a.Account.ClearAccount()
+	return err
 }
 
 func (a account) loadSender(sender string) (models.Account, error) {

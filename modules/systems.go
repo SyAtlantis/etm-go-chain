@@ -42,10 +42,15 @@ func (s *system) SetLastHeight(h int64) error {
 func (s *system) LoadBlockChain() error {
 	logs.Debug("load block chain")
 	// clear tables accounts
+	if err := accounts.RemoveTables(); err != nil {
+		return err
+	}
 
 	// load blocks offset
-	err := blocks.loadBlocksOffset(0, 1000)
-	return err
+	if err := blocks.loadBlocksOffset(0, 1000); err != nil {
+		return err
+	}
+	return nil
 }
 
 func onLoadSystem(e event.Event) error {

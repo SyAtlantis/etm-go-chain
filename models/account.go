@@ -15,6 +15,7 @@ type iAccount interface {
 	Merge() error
 	GetAccount() (Account, error)
 	SetAccount() error
+	ClearAccount() error
 	GetAccounts() ([]Account, error)
 	SetAccounts(as []Account) error
 }
@@ -34,7 +35,7 @@ type Account struct {
 type Delegate struct {
 	Key            int64        `orm:"pk;auto"`
 	Username       string       `json:"username"`
-	Account        *Account     `json:"account" orm:"reverse(one)"`
+	Account        *Account     `json:"account" orm:"reverse(one);cascade"`
 	TransactionId  *Transaction `json:"transactionId" orm:"rel(one);column(transaction_id)"`
 	Voters         []*Vote      `json:"voters" orm:"reverse(many)"`
 	Rate           int          `json:"rate"`
@@ -45,16 +46,16 @@ type Delegate struct {
 
 type Vote struct {
 	Key           int64        `orm:"pk;auto"`
-	Account       *Account     `json:"account" orm:"reverse(one)"`
+	Account       *Account     `json:"account" orm:"reverse(one);cascade"`
 	TransactionId *Transaction `json:"transactionId" orm:"rel(one);column(transaction_id)"`
 	Delegate      *Delegate    `json:"delegate" orm:"rel(fk)"`
-	Locks         []*Lock      `json:"locks" orm:"rel(m2m);null"`
+	Locks         []*Lock      `json:"locks" orm:"rel(m2m);rel_table(account#vote_locks);null"`
 	Votes         int64        `json:"votes"`
 }
 
 type Lock struct {
 	Key           int64        `orm:"pk;auto"`
-	Account       *Account     `json:"account" orm:"rel(fk)"`
+	Account       *Account     `json:"account" orm:"rel(fk);cascade"`
 	TransactionId *Transaction `json:"transactionId" orm:"rel(one);column(transaction_id)"`
 	LockAmount    int64        `json:"lockAmount" orm:"column(lockAmount)"`
 	OriginHeight  int64        `json:"originHeight" orm:"column(originHeight)"`
@@ -102,6 +103,15 @@ func (a *Account) SetAccount() error {
 	if _, _, err := o.ReadOrCreate(a, "Address"); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (a *Account) ClearAccount() error {
+	//o := orm.NewOrm()
+	//qs := o.QueryTable("account")
+	//if _, err := qs.Delete(); err != nil {
+	//	return err
+	//}
 	return nil
 }
 

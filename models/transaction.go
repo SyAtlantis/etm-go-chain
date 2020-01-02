@@ -20,6 +20,7 @@ const (
 	LOCK       uint8 = 101
 	UNLOCK     uint8 = 102
 	VOTE       uint8 = 3
+	UNVOTE     uint8 = 5
 	DELAY      uint8 = 110
 	SECOND     uint8 = 1
 	MULTI      uint8 = 4

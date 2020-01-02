@@ -50,6 +50,7 @@ func (vote *TrVote) apply(tr *Transaction) error {
 		TransactionId: &Transaction{
 			Id: tr.Id,
 		},
+		Account: &sender,
 	}
 	err := sender.SetAccount()
 

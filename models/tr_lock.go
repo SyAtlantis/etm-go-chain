@@ -39,13 +39,14 @@ func (lock *TrLock) apply(tr *Transaction) error {
 	}
 	lockAmount, err := strconv.ParseInt(tr.Args, 10, 64)
 	if err != nil {
-		 return  errors.New("lock amount is not the type of int64")
+		return errors.New("lock amount is not the type of int64")
 	}
 	l := &Lock{
 		LockAmount: lockAmount,
 		TransactionId: &Transaction{
 			Id: tr.Id,
 		},
+		Account: &sender,
 	}
 	sender.Locks = append(sender.Locks, l)
 	err = sender.SetAccount()

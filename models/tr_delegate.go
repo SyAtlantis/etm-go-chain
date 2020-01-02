@@ -49,6 +49,7 @@ func (delegate *TrDelegate) apply(tr *Transaction) error {
 		TransactionId: &Transaction{
 			Id: tr.Id,
 		},
+		Account: &sender,
 	}
 	err := sender.SetAccount()
 
