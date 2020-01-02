@@ -70,9 +70,11 @@ func (a *Account) IsEmpty() bool {
 
 func (a *Account) Merge() error {
 	o := orm.NewOrm()
-	_, err := o.Update(a)
-	//logs.Debug("Merge account")
-	return err
+	if _, err := o.Update(a); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *Account) GetAccount() (Account, error) {
@@ -103,6 +105,7 @@ func (a *Account) SetAccount() error {
 	if _, _, err := o.ReadOrCreate(a, "Address"); err != nil {
 		return err
 	}
+
 	return nil
 }
 

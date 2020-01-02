@@ -31,19 +31,3 @@ func InitDb() {
 
 	logs.Info("【Init】 sqlite3 database ok!")
 }
-
-func Insert(md interface{}) (int64, error) {
-	return orm.NewOrm().Insert(md)
-}
-
-func Update(md interface{}, cols ...string) (int64, error) {
-	return orm.NewOrm().Update(md, cols...)
-}
-
-func Read(md interface{}, cols ...string) error {
-	return orm.NewOrm().Read(md, cols...)
-}
-
-func Delete(md interface{}, cols ...string) (int64, error) {
-	return orm.NewOrm().Delete(md, cols...)
-}
