@@ -181,7 +181,8 @@ func (b *block) applyBlock(mb models.Block) error {
 	}
 
 	logs.Debug("apply block")
-	return err
+
+	return nil
 }
 
 func onBindBlock(e event.Event) error {

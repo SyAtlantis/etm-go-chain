@@ -70,23 +70,6 @@ func (a *Account) IsEmpty() bool {
 
 func (a *Account) Merge() error {
 	o := orm.NewOrm()
-
-	if a.Delegate != nil {
-		if _, _, err := o.ReadOrCreate(a.Delegate, "TransactionId"); err != nil {
-			return err
-		}
-	}
-	if a.Vote != nil {
-		if _, _, err := o.ReadOrCreate(a.Vote, "TransactionId"); err != nil {
-			return err
-		}
-	}
-	if a.Locks != nil {
-		if _, _, err := o.ReadOrCreate(a.Locks[0], "TransactionId"); err != nil {
-			return err
-		}
-	}
-
 	if _, err := o.Update(a); err != nil {
 		return err
 	}
@@ -122,6 +105,7 @@ func (a *Account) SetAccount() error {
 	if _, _, err := o.ReadOrCreate(a, "Address"); err != nil {
 		return err
 	}
+
 	return nil
 }
 

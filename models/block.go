@@ -104,12 +104,16 @@ func (b *Block) Create(data BlockData) error {
 	b.Generator = fmt.Sprintf("%x", data.Keypair.PublicKey)
 	b.Transactions = blockTrs
 
-	b.BlockSignature, err = b.GetSignature(data.Keypair)
+	if b.BlockSignature, err = b.GetSignature(data.Keypair); err != nil {
+		return err
+	}
 
-	b.Id, err = b.GetId()
+	if b.Id, err = b.GetId(); err != nil {
+		return err
+	}
 	b.Height = nextHeight
 
-	return err
+	return nil
 }
 
 func (b *Block) GetBytes() ([]byte, error) {
