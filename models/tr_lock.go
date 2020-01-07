@@ -41,17 +41,21 @@ func (lock *TrLock) apply(tr *Transaction) error {
 	if err != nil {
 		return errors.New("lock amount is not the type of int64")
 	}
+	if sender.Balance < lockAmount {
+		return errors.New("not enough balance to lock")
+	}
 	l := &Lock{
-		LockAmount: lockAmount,
-		TransactionId: &Transaction{
-			Id: tr.Id,
-		},
-		Account: &sender,
+		LockAmount:    lockAmount,
+		TransactionId: tr.Id,
+		Account:       &sender,
 	}
 	sender.Locks = append(sender.Locks, l)
-	err = sender.SetAccount()
+	sender.Balance -= lockAmount
+	if err = sender.Merge(); err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (lock *TrLock) undo(tr *Transaction) error {

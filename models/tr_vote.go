@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"errors"
+	"strings"
 )
 
 type TrVote struct {
@@ -42,19 +43,15 @@ func (vote *TrVote) apply(tr *Transaction) error {
 		return errors.New("sender account is empty")
 	}
 	sender.Vote = &Vote{
-		Delegate: &Delegate{
-			Account: &Account{
-				PublicKey: tr.Args,
-			},
-		},
-		TransactionId: &Transaction{
-			Id: tr.Id,
-		},
-		Account: &sender,
+		Delegate:      strings.Replace(tr.Args, "+", "", -1),
+		TransactionId: tr.Id,
+		Account:       &sender,
 	}
-	err := sender.SetAccount()
+	if err := sender.Merge(); err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (vote *TrVote) undo(tr *Transaction) error {

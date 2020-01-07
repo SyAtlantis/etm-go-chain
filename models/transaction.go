@@ -282,7 +282,7 @@ func (t *Transaction) UndoUnconfirmed() error {
 
 func (t *Transaction) GetTransaction() (Transaction, error) {
 	o := orm.NewOrm()
-	err := o.Read(&t)
+	err := o.Read(&t, "Id")
 	return *t, err
 }
 

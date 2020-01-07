@@ -168,7 +168,7 @@ func (b *Block) VerifySignature() (bool error) {
 
 func (b *Block) GetBlock() (Block, error) {
 	o := orm.NewOrm()
-	err := o.Read(&b)
+	err := o.Read(&b, "Height")
 	return *b, err
 }
 

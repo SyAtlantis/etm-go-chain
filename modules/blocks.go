@@ -153,12 +153,8 @@ func (b *block) applyBlock(mb models.Block) error {
 	appliedTrIds := set.New(set.ThreadSafe)
 	trs := mb.Transactions
 	trs.Sort()
-	for _, tr := range trs {
-		//if mb.Height == 1 {
-		//	// create account
-		//} else {
-		//	// update account
-		//}
+	for i, tr := range trs {
+		logs.Debug(i,tr.Id)
 		if tr.SAccount, err = accounts.loadSender(tr.Sender); err != nil {
 			return err
 		}

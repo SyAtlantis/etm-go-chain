@@ -45,15 +45,15 @@ func (delegate *TrDelegate) apply(tr *Transaction) error {
 		return errors.New("sender account is empty")
 	}
 	sender.Delegate = &Delegate{
-		Username: tr.Args,
-		TransactionId: &Transaction{
-			Id: tr.Id,
-		},
-		Account: &sender,
+		Username:      tr.Args,
+		TransactionId: tr.Id,
+		Account:       &sender,
 	}
-	err := sender.SetAccount()
+	if err := sender.Merge(); err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (delegate *TrDelegate) undo(tr *Transaction) error {

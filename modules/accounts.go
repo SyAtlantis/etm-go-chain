@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"encoding/hex"
 	"errors"
 	"etm-go-chain/utils"
 	"github.com/astaxie/beego/logs"
@@ -44,8 +45,18 @@ func (a account) loadSender(sender string) (models.Account, error) {
 	}
 
 	Address := utils.Address{}
+	pub, err := hex.DecodeString(sender)
+	if err != nil {
+		return acc, err
+	}
+	acc.Address = Address.GenerateAddresss(pub)
+
+	if acc2, err := acc.GetAccount(); err == nil {
+		acc2.PublicKey = sender
+		return acc2, nil
+	}
+
 	acc.PublicKey = sender
-	acc.Address = Address.GenerateAddresss([]byte(sender))
 	return acc, acc.SetAccount()
 }
 
@@ -56,6 +67,9 @@ func (a account) loadRecipient(recipient string) (models.Account, error) {
 	}
 
 	acc.Address = recipient
+	if a, err := acc.GetAccount(); err == nil {
+		return a, nil
+	}
 	return acc, acc.SetAccount()
 }
 
