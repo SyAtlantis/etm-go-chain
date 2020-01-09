@@ -47,13 +47,10 @@ func (lock *TrLock) apply(tr *Transaction) error {
 	l := &Lock{
 		LockAmount:    lockAmount,
 		TransactionId: tr.Id,
-		Account:       &sender,
+		Account:       sender,
 	}
 	sender.Locks = append(sender.Locks, l)
 	sender.Balance -= lockAmount
-	if err = sender.Merge(); err != nil {
-		return err
-	}
 
 	return nil
 }

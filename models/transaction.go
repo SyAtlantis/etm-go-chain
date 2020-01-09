@@ -56,19 +56,18 @@ type iTransaction interface {
 }
 
 type Transaction struct {
-	Key       int64   `orm:"pk;auto"`
-	Id        string  `json:"id" `
-	Type      uint8   `json:"type"`
-	BlockId   *Block  `json:"blockId" orm:"rel(fk);column(block_id)"`
-	Fee       int64   `json:"fee"`
-	Amount    int64   `json:"amount"`
-	Timestamp int64   `json:"timestamp"`
-	Sender    string  `json:"sender"`
-	Recipient string  `json:"recipient"`
-	Args      string  `json:"args"`
-	Signature string  `json:"signature"`
-	SAccount  Account `json:"sAccount" orm:"-"`
-	PAccount  Account `json:"pAccount" orm:"-"`
+	Id        string    `json:"id" orm:"pk;"`
+	Type      uint8     `json:"type"`
+	BlockId   *Block    `json:"blockId" orm:"rel(fk);column(block_id)"`
+	Fee       int64     `json:"fee"`
+	Amount    int64     `json:"amount"`
+	Timestamp int64     `json:"timestamp"`
+	Sender    string    `json:"sender"`
+	Recipient string    `json:"recipient"`
+	Args      string    `json:"args"`
+	Signature string    `json:"signature"`
+	SAccount  *Account   `json:"sAccount" orm:"-"`
+	RAccount  *Account   `json:"RAccount" orm:"-"`
 }
 
 type TrData struct {
@@ -257,9 +256,9 @@ func (t *Transaction) Apply() error {
 		return errors.New("Insufficient balance: " + string(sender.Balance))
 	}
 	sender.Balance -= amount
-	if err := sender.Merge(); err != nil {
-		return err
-	}
+	//if err := sender.Merge(); err != nil {
+	//	return err
+	//}
 
 	if err := trTypes[t.Type].apply(t); err != nil {
 		return err

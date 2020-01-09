@@ -49,7 +49,7 @@ func (a account) loadSender(sender string) (models.Account, error) {
 	if err != nil {
 		return acc, err
 	}
-	acc.Address = Address.GenerateAddresss(pub)
+	acc.Address = Address.GenerateAddress(pub)
 
 	if acc2, err := acc.GetAccount(); err == nil {
 		acc2.PublicKey = sender

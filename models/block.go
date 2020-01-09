@@ -33,8 +33,8 @@ type iBlock interface {
 }
 
 type Block struct {
-	Id                   string `json:"id"`
-	Height               int64  `json:"height" orm:"pk"`
+	Id                   string `json:"id" orm:"pk"`
+	Height               int64  `json:"height"`
 	Timestamp            int64  `json:"timestamp"`
 	TotalAmount          int64  `json:"totalAmount" orm:"column(totalAmount)"`
 	TotalFee             int64  `json:"totalFee" orm:"column(totalFee)"`
@@ -177,40 +177,51 @@ func (b *Block) GetBlock() (Block, error) {
 }
 
 func (b *Block) SetBlock() error {
-	var err error
+	//var err error
 	o := orm.NewOrm()
 
 	var rollback = func() {
-		err = o.Rollback()
-		if err != nil {
+		if err := o.Rollback(); err != nil {
 			panic(err)
 		}
 	}
 
 	//保存区块错误时，需要事物回滚
-	err = o.Begin()
-	if err != nil {
+	if err := o.Begin(); err != nil {
 		rollback()
 		return err
 	}
 
-	var created bool
-	created, _, err = o.ReadOrCreate(b, "Id")
-	if err != nil {
-		rollback()
-		return err
-	}
+	if err := o.Read(b, "Id"); err != nil {
+		if _, err := o.Insert(b); err != nil {
+			rollback()
+			return err
+		}
 
-	//保存区块时，需要保存区块中交易
-	if created {
 		trs := b.Transactions
-		//有回滚，必须在同一个数据库操作中执行
-		_, err := o.InsertMulti(20, trs)
-		if err != nil {
+		if _, err := o.InsertMulti(20, trs); err != nil {
 			rollback()
 			return err
 		}
 	}
+
+	//var created bool
+	//var err error
+	//created, _, err = o.ReadOrCreate(b, "Height")
+	//if err != nil {
+	//	rollback()
+	//	return err
+	//}
+	//
+	////保存区块时，需要保存区块中交易
+	//trs := b.Transactions
+	//if created && len(trs) > 0 {
+	//	//有回滚，必须在同一个数据库操作中执行
+	//	if _, err := o.InsertMulti(20, trs); err != nil {
+	//		rollback()
+	//		return err
+	//	}
+	//}
 
 	return o.Commit()
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
-	"github.com/fatih/set"
 	"github.com/gookit/event"
 )
 
@@ -83,7 +82,7 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 			for _, blockItem := range blockList {
 				var trList models.Trs
 				qt := o.QueryTable("transaction")
-				if n, err := qt.Filter("block_id", blockItem.Height).All(&trList); err == nil && n > 0 {
+				if n, err := qt.Filter("block_id", blockItem.Id).RelatedSel("BlockId").All(&trList); err == nil && n > 0 {
 					blockItem.Transactions = trList
 				}
 
@@ -149,36 +148,38 @@ func (b *block) applyBlock(mb models.Block) error {
 	// undo unconfirmedList
 	// do apply
 
-	var err error
-	appliedTrIds := set.New(set.ThreadSafe)
+	//var err error
+	//appliedTrIds := set.New(set.ThreadSafe)
 	trs := mb.Transactions
-	trs.Sort()
-	for i, tr := range trs {
-		logs.Debug(i,tr.Id)
-		if tr.SAccount, err = accounts.loadSender(tr.Sender); err != nil {
-			return err
-		}
-
-		if tr.Recipient != "" {
-			if tr.PAccount, err = accounts.loadRecipient(tr.Recipient); err != nil {
-				return err
-			}
-		}
-
-		//if err = transactions.applyUnconfirmed(*tr); err != nil {
-		//	return err
-		//}
-
-		if err = tr.Apply(); err != nil {
-			return err
-		}
-
-		//if err = transactions.removeUnconfirmed(*tr); err != nil {
-		//	return err
-		//}
-
-		appliedTrIds.Add(tr.Id)
+	if err := trs.Apply(); err != nil {
+		return err
 	}
+	//for i, tr := range trs {
+	//	logs.Debug(i,tr.Id)
+	//	if tr.SAccount, err = accounts.loadSender(tr.Sender); err != nil {
+	//		return err
+	//	}
+	//
+	//	if tr.Recipient != "" {
+	//		if tr.RAccount, err = accounts.loadRecipient(tr.Recipient); err != nil {
+	//			return err
+	//		}
+	//	}
+	//
+	//	//if err = transactions.applyUnconfirmed(*tr); err != nil {
+	//	//	return err
+	//	//}
+	//
+	//	if err = tr.Apply(); err != nil {
+	//		return err
+	//	}
+	//
+	//	//if err = transactions.removeUnconfirmed(*tr); err != nil {
+	//	//	return err
+	//	//}
+	//
+	//	appliedTrIds.Add(tr.Id)
+	//}
 
 	logs.Debug("apply block")
 

@@ -45,10 +45,7 @@ func (vote *TrVote) apply(tr *Transaction) error {
 	sender.Vote = &Vote{
 		Delegate:      strings.Replace(tr.Args, "+", "", -1),
 		TransactionId: tr.Id,
-		Account:       &sender,
-	}
-	if err := sender.Merge(); err != nil {
-		return err
+		Account:       sender,
 	}
 
 	return nil

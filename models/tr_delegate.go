@@ -47,10 +47,7 @@ func (delegate *TrDelegate) apply(tr *Transaction) error {
 	sender.Delegate = &Delegate{
 		Username:      tr.Args,
 		TransactionId: tr.Id,
-		Account:       &sender,
-	}
-	if err := sender.Merge(); err != nil {
-		return err
+		Account:       sender,
 	}
 
 	return nil

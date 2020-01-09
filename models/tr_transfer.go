@@ -29,16 +29,13 @@ func (transfer *TrTransfer) process(tr *Transaction) error {
 }
 
 func (transfer *TrTransfer) apply(tr *Transaction) error {
-	recipient := tr.PAccount
+	recipient := tr.RAccount
 	if recipient.IsEmpty() {
 		return errors.New("recipient account is empty")
 	}
 
 	amount := tr.Amount + tr.Fee
 	recipient.Balance += amount
-	if err := recipient.Merge(); err != nil {
-		return err
-	}
 
 	return nil
 }
