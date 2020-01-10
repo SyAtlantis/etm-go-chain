@@ -34,7 +34,7 @@ func (p peer) loadPeers() error {
 }
 
 func onLoadPeers(e event.Event) error {
-	logs.Info("onload peers", e)
+	logs.Info("onLoad peers", e)
 	err := peers.loadPeers()
 	return err
 }

@@ -3,7 +3,6 @@ package models
 import (
 	"errors"
 	"etm-go-chain/utils"
-	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"reflect"
 	"sort"
@@ -65,8 +64,8 @@ func (trs Trs) Apply() error {
 	defer iv.Close()
 	defer il.Close()
 
-	for i, tr := range trs {
-		logs.Debug(i, tr.Id)
+	for _, tr := range trs {
+		//logs.Debug(i, tr.Id)
 
 		// 获取或者新建交易的account
 		if tr.Sender == "" {

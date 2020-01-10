@@ -7,8 +7,7 @@ import (
 )
 
 func init() {
-	event.On("load", event.ListenerFunc(onLoadSystem), event.Normal)
-	event.On("ready", event.ListenerFunc(onReadySystem), event.Normal)
+	event.On("load", event.ListenerFunc(onLoadBlockChain), event.Normal)
 }
 
 type Systems interface {
@@ -40,7 +39,6 @@ func (s *system) SetLastHeight(h int64) error {
 }
 
 func (s *system) LoadBlockChain() error {
-	logs.Debug("load block chain")
 	// clear tables accounts
 	if err := accounts.RemoveTables(); err != nil {
 		return err
@@ -50,15 +48,20 @@ func (s *system) LoadBlockChain() error {
 	if err := blocks.loadBlocksOffset(0, 1000); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func onLoadSystem(e event.Event) error {
-	err := systems.LoadBlockChain()
-	return err
-}
+func onLoadBlockChain(e event.Event) error {
+	logs.Info("onLoad blockChain", e.Data())
 
-func onReadySystem(e event.Event) error {
-	logs.Info("onReady system", e)
+	if err := systems.LoadBlockChain(); err != nil {
+		return err
+	}
+
+	if err, _ := event.Fire("ready", event.M{}); err != nil {
+		return err
+	}
+
 	return nil
 }

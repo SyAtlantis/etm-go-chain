@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	event.On("load", event.ListenerFunc(onLoadAccounts), event.Normal)
+	event.On("ready", event.ListenerFunc(onReadyMyDelegates), event.Normal)
 }
 
 type Accounts interface {
@@ -73,7 +73,7 @@ func (a account) loadRecipient(recipient string) (models.Account, error) {
 	return acc, acc.SetAccount()
 }
 
-func onLoadAccounts(e event.Event) error {
-	logs.Info("onload account", e)
+func onReadyMyDelegates(e event.Event) error {
+	logs.Info("onReady myDelegates", e)
 	return nil
 }

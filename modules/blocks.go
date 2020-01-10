@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	event.On("bind", event.ListenerFunc(onBindBlock), event.Normal)
+	event.On("bind", event.ListenerFunc(onBindGenesisBlock), event.Normal)
 }
 
 type Blocks interface {
@@ -181,13 +181,12 @@ func (b *block) applyBlock(mb models.Block) error {
 	//	appliedTrIds.Add(tr.Id)
 	//}
 
-	logs.Debug("apply block")
-
+	logs.Debug("apply block ok")
 	return nil
 }
 
-func onBindBlock(e event.Event) error {
-	logs.Info("onBind block", e.Data())
+func onBindGenesisBlock(e event.Event) error {
+	logs.Info("onBind genesisBlock", e.Data())
 
 	genesisBlock := core.GetGenesisBlock()
 
