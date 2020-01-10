@@ -95,7 +95,7 @@ func (trs Trs) Apply() error {
 			}
 		}
 
-		//更新交易数据到account
+		// 更新交易数据到account
 		if err := tr.Apply(); err != nil {
 			return err
 		}
@@ -135,6 +135,7 @@ func readOrCreate(qs orm.QuerySeter, i orm.Inserter, a *Account) (*Account, erro
 	if qs.Exist() {
 		var account Account
 		err := qs.One(&account)
+		structAssign(&account, a)
 		return &account, err
 	} else {
 		_, err := i.Insert(a)
@@ -144,7 +145,7 @@ func readOrCreate(qs orm.QuerySeter, i orm.Inserter, a *Account) (*Account, erro
 
 func updateOrInsert(qs orm.QuerySeter, i orm.Inserter, data interface{}) error {
 	if qs.Exist() {
-		if _, err := qs.Update(Struct2Map(data)); err != nil {
+		if _, err := qs.Update(struct2Map(data)); err != nil {
 			return err
 		}
 	} else {
@@ -154,7 +155,7 @@ func updateOrInsert(qs orm.QuerySeter, i orm.Inserter, data interface{}) error {
 	return nil
 }
 
-func Struct2Map(obj interface{}) map[string]interface{} {
+func struct2Map(obj interface{}) map[string]interface{} {
 	t := reflect.TypeOf(obj) // 获取 obj 的类型信息
 	v := reflect.ValueOf(obj)
 	if t.Kind() == reflect.Ptr { // 如果是指针，则获取其所指向的元素
@@ -182,4 +183,31 @@ func Struct2Map(obj interface{}) map[string]interface{} {
 	}
 
 	return data
+}
+
+func structAssign(c1 *Account, c2 *Account) {
+	v1 := reflect.ValueOf(*c1)            //初始化为c1保管的具体值的v1
+	v2 := reflect.ValueOf(*c2)            //初始化为c2保管的具体值的v2
+	v1_elem := reflect.ValueOf(c1).Elem() //返回 c1 指针保管的值
+
+	for i := 0; i < v1.NumField(); i++ {
+		field := v1.Field(i)  //返回结构体的第i个字段
+		field2 := v2.Field(i) //返回结构体的第i个字段
+
+		//field.Interface() 当前持有的值
+		//reflect.Zero 根据类型获取对应的 零值
+		//这个必须调用 Interface 方法 否则为 reflect.Value 构造体的对比 而不是两个值的对比
+		//这个地方不要用等号去对比 因为golang 切片类型是不支持 对比的
+
+		if reflect.DeepEqual(field.Interface(), reflect.Zero(field.Type()).Interface()) { //如果第一个构造体某个字段对应类型的默认值
+
+			if !reflect.DeepEqual(field2.Interface(), reflect.Zero(field2.Type()).Interface()) { //如果第二个构造体 这个字段不为空
+
+				if v1_elem.Field(i).CanSet() != true { //如果不可以设置值 直接返回
+					return
+				}
+				v1_elem.Field(i).Set(field2) //设置值
+			}
+		}
+	}
 }

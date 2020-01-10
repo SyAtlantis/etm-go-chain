@@ -256,9 +256,6 @@ func (t *Transaction) Apply() error {
 		return errors.New("Insufficient balance: " + string(sender.Balance))
 	}
 	sender.Balance -= amount
-	//if err := sender.Merge(); err != nil {
-	//	return err
-	//}
 
 	if err := trTypes[t.Type].apply(t); err != nil {
 		return err

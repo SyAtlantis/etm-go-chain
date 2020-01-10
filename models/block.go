@@ -205,23 +205,5 @@ func (b *Block) SetBlock() error {
 		}
 	}
 
-	//var created bool
-	//var err error
-	//created, _, err = o.ReadOrCreate(b, "Height")
-	//if err != nil {
-	//	rollback()
-	//	return err
-	//}
-	//
-	////保存区块时，需要保存区块中交易
-	//trs := b.Transactions
-	//if created && len(trs) > 0 {
-	//	//有回滚，必须在同一个数据库操作中执行
-	//	if _, err := o.InsertMulti(20, trs); err != nil {
-	//		rollback()
-	//		return err
-	//	}
-	//}
-
 	return o.Commit()
 }
