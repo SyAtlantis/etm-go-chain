@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	event.On("load", event.ListenerFunc(onLoadPeers), event.Normal)
+	event.On("bind", event.ListenerFunc(onBindPeers), event.Normal)
 }
 
 type Peers interface {
@@ -29,12 +29,14 @@ func (p peer) GetPeers() {
 }
 
 func (p peer) loadPeers() error {
-	logs.Debug("load peers")
+	// TODO load peers
+	logs.Warn("TODO load peers!")
+
 	return nil
 }
 
-func onLoadPeers(e event.Event) error {
-	logs.Info("onLoad peers", e)
+func onBindPeers(e event.Event) error {
+	logs.Notice("【onBind】 peers", e)
 	err := peers.loadPeers()
 	return err
 }

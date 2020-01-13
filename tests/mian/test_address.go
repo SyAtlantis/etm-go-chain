@@ -23,7 +23,7 @@ func main() {
 	
 	//test address
 	address := utils.Address{}
-	addr := address.GenerateAddresss(keypair.PublicKey)
+	addr := address.GenerateAddress(keypair.PublicKey)
 	fmt.Println(addr)
 	fmt.Println(address.IsAddress(addr))
 	

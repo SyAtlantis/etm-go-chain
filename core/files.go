@@ -9,35 +9,69 @@ import (
 )
 
 var (
-	appConfig    config.Configer
+	appConfig    Config
 	genesisBlock models.Block
 )
+
+type Config struct {
+	Port     int
+	PublicIp string
+	LogLevel string
+	Magic    string
+	PeerList []string
+	Secrets  []string
+}
 
 func InitConfig() {
 	file := beego.AppConfig.String("file_config")
 	conf, err := config.NewConfig("json", file)
 	if err != nil {
-		logs.Error("【Init】 config error! ==>", err)
+		logs.Error("【Init】 read config error! ==>", err)
 		return
 	}
-	appConfig = conf
+	if appConfig, err = trans2Config(conf); err != nil {
+		logs.Error("【Init】 transfer config error! ==>", err)
+		return
+	}
 
 	logs.Info("【Init】 config ok!")
+}
+
+func trans2Config(conf config.Configer) (c Config, err error) {
+	if c.Port, err = conf.Int("port"); err != nil {
+		return c, err
+	}
+	c.PublicIp = conf.String("publicIp")
+	c.LogLevel = conf.String("logLevel")
+	c.Magic = conf.String("magic")
+	c.PeerList = conf.Strings("peerList")
+	c.Secrets = conf.Strings("secrets")
+	//secrets, err := conf.DIY("secrets")
+	//if err != nil {
+	//	return c, err
+	//}
+	//c.Secrets = []string(secrets.([]interface{}))
+
+	return c, nil
 }
 
 func InitGenesisBlock() {
 	file := beego.AppConfig.String("file_genesisBlock")
 	genesis, err := config.NewConfig("json", file)
-	genesisBlock, err = Trans2Block(genesis)
 	if err != nil {
-		logs.Error("【Init】 genesisBlock error! ==>", err)
+		logs.Error("【Init】 read genesisBlock error! ==>", err)
+		return
+	}
+
+	if genesisBlock, err = trans2Block(genesis); err != nil {
+		logs.Error("【Init】 transfer genesisBlock error! ==>", err)
 		return
 	}
 
 	logs.Info("【Init】 genesisBlock ok!")
 }
 
-func Trans2Block(c config.Configer) (b models.Block, err error) {
+func trans2Block(c config.Configer) (b models.Block, err error) {
 	b.Id = c.String("id")
 	b.Height, err = c.Int64("height")
 	b.Timestamp, err = c.Int64("timestamp")
@@ -56,7 +90,7 @@ func Trans2Block(c config.Configer) (b models.Block, err error) {
 		return b, err2
 	}
 	for _, tr := range trs.([]interface{}) {
-		tt, err3 := Trans2Transaction(tr, b)
+		tt, err3 := trans2Transaction(tr, b)
 		if err3 != nil {
 			return b, err3
 		}
@@ -67,7 +101,7 @@ func Trans2Block(c config.Configer) (b models.Block, err error) {
 	return b, err
 }
 
-func Trans2Transaction(data interface{}, b models.Block) (t models.Transaction, err error) {
+func trans2Transaction(data interface{}, b models.Block) (t models.Transaction, err error) {
 	trData := models.TrData{}
 	if err = mapstructure.Decode(data, &trData); err == nil {
 		t.Id = trData.Id
@@ -79,7 +113,7 @@ func Trans2Transaction(data interface{}, b models.Block) (t models.Transaction, 
 		t.Timestamp = trData.Timestamp
 		t.Sender = trData.SenderPublicKey
 		t.Recipient = trData.RecipientId
-		
+
 		// Args.Asset全部存在Args中
 		if trData.Args != nil && len(trData.Args) > 0 {
 			t.Args = trData.Args[0]
@@ -96,59 +130,10 @@ func Trans2Transaction(data interface{}, b models.Block) (t models.Transaction, 
 		t.Signature = trData.Signature
 	}
 
-	//obj, ok := data.(map[string]interface{})
-	//
-	//t.Id, ok = obj["id"].(string)
-	//t.BlockId = &b
-	//if ty, ok := obj["type"].(float64); ok {
-	//	t.Type = uint8(ty)
-	//}
-	//if fee, ok := obj["fee"].(float64); ok {
-	//	t.Fee = int64(fee)
-	//}
-	//if amount, ok := obj["amount"].(float64); ok {
-	//	t.Amount = int64(amount)
-	//}
-	//if timestamp, ok := obj["timestamp"].(float64); ok {
-	//	t.Timestamp = int64(timestamp)
-	//}
-	//if senderPublicKey, ok := obj["senderPublicKey"].(string); ok && senderPublicKey != "" {
-	//	t.Sender = senderPublicKey
-	//}
-	//if recipient, ok := obj["recipientId"].(string); ok && recipient != "" {
-	//	t.Recipient = recipient
-	//}
-	//if args, ok := obj["args"].([]interface{}); ok {
-	//	t.Args = args[0].(string)
-	//	//var bs []byte
-	//	//if bs, err = json.Marshal(args); err != nil {
-	//	//	return t, err
-	//	//}
-	//	//t.Args = string(bs)
-	//}
-	//
-	////t.Message, ok = obj["message"].(string)
-	//t.Signature, ok = obj["signature"].(string)
-	//
-	//if asset, ok := obj["asset"].(map[string]interface{}); ok {
-	//	if asset["delegate"] != nil {
-	//		if delegate, ok := asset["delegate"].(map[string]interface{}); ok {
-	//			if delegate["username"] != nil {
-	//				t.Args = delegate["username"].(string)
-	//			}
-	//		}
-	//
-	//	}
-	//	//	err = mapstructure.Decode(asset, &t.Asset)
-	//}
-	//
-	//if !ok {
-	//	err = errors.New("Transform data to Transaction error")
-	//}
 	return t, err
 }
 
-func GetConfig() config.Configer {
+func GetConfig() Config {
 	return appConfig
 }
 

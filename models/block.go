@@ -45,7 +45,7 @@ type Block struct {
 	Generator            string `json:"generator"`
 	BlockSignature       string `json:"blockSignature" orm:"column(blockSignature)"`
 	NumberOfTransactions int    `json:"numberOfTransactions" orm:"column(numberOfTransactions)"`
-	Transactions         Trs    `json:"transactions" orm:"reverse(many)"`
+	Transactions         Trs    `json:"-" orm:"reverse(many)"`
 }
 
 type BlockData struct {

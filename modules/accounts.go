@@ -1,9 +1,12 @@
 package modules
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"etm-go-chain/core"
 	"etm-go-chain/utils"
+	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
 
@@ -11,7 +14,7 @@ import (
 )
 
 func init() {
-	event.On("ready", event.ListenerFunc(onReadyMyDelegates), event.Normal)
+	event.On("bind", event.ListenerFunc(onBindMyDelegates), event.Normal)
 }
 
 type Accounts interface {
@@ -73,7 +76,31 @@ func (a account) loadRecipient(recipient string) (models.Account, error) {
 	return acc, acc.SetAccount()
 }
 
-func onReadyMyDelegates(e event.Event) error {
-	logs.Info("onReady myDelegates", e)
+func (a account) getMyDelegates() error {
+
 	return nil
 }
+
+func onBindMyDelegates(e event.Event) error {
+	logs.Notice("【onBind】 myDelegates", e)
+
+	config := core.GetConfig()
+	var myDelegates []string
+	
+	logs.Warn("TODO 需要判断secret是否合法!")
+	for _, s := range config.Secrets {
+		// TODO 需要判断secret是否合法
+
+		ed := utils.Ed{}
+		hash := sha256.Sum256([]byte(s))
+		keypair := ed.MakeKeypair(hash[:])
+		pub := fmt.Sprintf("%x", keypair.PublicKey)
+		myDelegates = append(myDelegates, pub)
+	}
+	if err := systems.SetMyDelegates(myDelegates); err != nil {
+		return err
+	}
+
+	return nil
+}
+

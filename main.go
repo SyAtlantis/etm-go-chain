@@ -1,15 +1,14 @@
 package main
 
 import (
+	"etm-go-chain/core"
+	"etm-go-chain/modules"
+	_ "etm-go-chain/routers"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/beego/i18n"
 	"github.com/gookit/event"
 	"time"
-
-	"etm-go-chain/core"
-	"etm-go-chain/modules"
-	_ "etm-go-chain/routers"
 )
 
 func init() {
@@ -70,12 +69,12 @@ func main() {
 }
 
 func start() {
-	time.Sleep(1 * time.Second)
-	if err, _ := event.Fire("bind", event.M{}); err != nil {
-		panic(err)
-	}
+	time.Sleep(200 * time.Millisecond)
 
-	//_, _ = event.Fire("load", event.M{"name": "bbb"})
-	//time.Sleep(10*time.Second)
-	//_, _ = event.Fire("ready", event.M{"name": "ccc"})
+	go func() {
+		logs.Notice("Event fire 【onBind】")
+		if err, _ := event.Fire("bind", event.M{}); err != nil {
+			panic(err)
+		}
+	}()
 }

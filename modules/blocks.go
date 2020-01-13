@@ -2,8 +2,10 @@ package modules
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"etm-go-chain/core"
 	"etm-go-chain/models"
+	"etm-go-chain/utils"
 	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
@@ -17,7 +19,7 @@ func init() {
 type Blocks interface {
 	GetBlocks() []models.Block
 
-	generateBlock() models.Block
+	generateBlock(utils.Keypair, int64) error
 	processBlock(mb models.Block) error
 
 	loadBlocksOffset(offset int64, limit int64) error
@@ -39,7 +41,7 @@ func (b *block) GetBlocks() []models.Block {
 	panic("implement me")
 }
 
-func (b *block) generateBlock() models.Block {
+func (b *block) generateBlock(keypair utils.Keypair, timestamp int64) error {
 	panic("implement me")
 }
 
@@ -86,7 +88,7 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 					blockItem.Transactions = trList
 				}
 
-				if systems.GetLastHeight() != 0 {
+				if systems.GetLastBlock() != nil && systems.GetLastBlock().Height != 0 {
 					if err := blocks.verifyBlock(*blockItem); err != nil {
 						return err
 					}
@@ -94,7 +96,7 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 				if err := blocks.applyBlock(*blockItem); err != nil {
 					return err
 				}
-				if err := systems.SetLastHeight(blockItem.Height); err != nil {
+				if err := systems.SetLastBlock(blockItem); err != nil {
 					return err
 				}
 			}
@@ -181,12 +183,17 @@ func (b *block) applyBlock(mb models.Block) error {
 	//	appliedTrIds.Add(tr.Id)
 	//}
 
-	logs.Debug("apply block ok")
+	jsonBytes, err := json.MarshalIndent(mb, "", "    ")
+	if err != nil {
+		return err
+	}
+	logs.Debug("applied block:", string(jsonBytes))
+
 	return nil
 }
 
 func onBindGenesisBlock(e event.Event) error {
-	logs.Info("onBind genesisBlock", e.Data())
+	logs.Notice("【onBind】 genesisBlock", e.Data())
 
 	genesisBlock := core.GetGenesisBlock()
 
@@ -200,9 +207,12 @@ func onBindGenesisBlock(e event.Event) error {
 		return err
 	}
 
-	if err, _ := event.Fire("load", event.M{}); err != nil {
-		return err
-	}
+	go func() {
+		logs.Notice("Event fire 【onLoad】")
+		if err, _ := event.Fire("load", event.M{}); err != nil {
+			panic(err)
+		}
+	}()
 
 	return nil
 }
