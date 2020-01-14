@@ -14,8 +14,8 @@ type Keypair struct {
 	PrivateKey []byte
 }
 
-func (k Keypair) IsEmpty() bool {
-	return reflect.DeepEqual(k, Keypair{})
+func (k *Keypair) IsEmpty() bool {
+	return k == nil || reflect.DeepEqual(k, Keypair{})
 }
 
 // 构造keypair
@@ -24,7 +24,7 @@ func (ed *Ed) MakeKeypair(hash []byte) Keypair {
 	if err != nil {
 		return Keypair{}
 	}
-	
+
 	return Keypair{
 		PublicKey:  pub,
 		PrivateKey: pri,

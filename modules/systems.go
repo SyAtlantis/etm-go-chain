@@ -2,7 +2,6 @@ package modules
 
 import (
 	"etm-go-chain/models"
-	"etm-go-chain/utils"
 	"github.com/astaxie/beego/logs"
 	"github.com/gookit/event"
 	"time"
@@ -15,17 +14,9 @@ func init() {
 
 type Systems interface {
 	GetVersion() string
-	GetLastHeight() int64
-	SetLastHeight(int64) error
-	GetLastBlock() *models.Block
-	SetLastBlock(*models.Block) error
-	GetMyDelegates() []string
-	SetMyDelegates([]string) error
-	GetDelegateList() []string
-	SetDelegateList([]string) error
 
-	Loops() error
-	LoadBlockChain() error
+	loops() error
+	loadBlockChain() error
 }
 
 type system struct {
@@ -40,58 +31,21 @@ func (s *system) GetVersion() string {
 	panic("implement me")
 }
 
-func (s *system) GetLastHeight() int64 {
-	return s.LastHeight
-}
-
-func (s *system) SetLastHeight(h int64) error {
-	s.LastHeight = h
-	return nil
-}
-
-func (s *system) GetLastBlock() *models.Block {
-	return s.LastBlock
-}
-
-func (s *system) SetLastBlock(b *models.Block) error {
-	s.LastBlock = b
-	return nil
-}
-
-func (s *system) GetMyDelegates() []string {
-	return s.MyDelegates
-}
-
-func (s *system) SetMyDelegates(delegates []string) error {
-	s.MyDelegates = delegates
-	return nil
-}
-
-func (s *system) GetDelegateList() []string {
-	return s.DelegateList
-}
-
-func (s *system) SetDelegateList(delegates []string) error {
-	s.DelegateList = delegates
-	return nil
-}
-
-func (s *system) Loops() error {
+func (s *system) loops() error {
 	logs.Debug("in loops")
 
-	slot := utils.NewSlots()
-	currentSlot := slot.GetSlotNumber()
-	lastBlock := systems.GetLastBlock()
+	currentSlot := slots.GetSlotNumber()
+	lastBlock := blocks.GetLastBlock()
 	if currentSlot == lastBlock.Timestamp {
 		return nil
 	}
 
-	timestamp, keypair, err := getBlockSlotData(currentSlot, lastBlock.Height+1)
+	blockData, err := blocks.getBlockSlotData(lastBlock.Height+1, currentSlot)
 	if err != nil {
 		return err
 	}
-	if slot.GetSlotNumber(timestamp) == slot.GetSlotNumber() && systems.GetLastBlock().Timestamp < timestamp {
-		if err := blocks.generateBlock(keypair, timestamp); err != nil {
+	if slots.GetSlotNumber(blockData.Timestamp) == slots.GetSlotNumber() && blocks.GetLastBlock().Timestamp < blockData.Timestamp {
+		if err := blocks.generateBlock(blockData); err != nil {
 			return err
 		}
 	}
@@ -99,11 +53,7 @@ func (s *system) Loops() error {
 	return nil
 }
 
-func getBlockSlotData(slot int64, height int64) (time int64, keypair utils.Keypair, err error) {
-	return time, keypair, err
-}
-
-func (s *system) LoadBlockChain() error {
+func (s *system) loadBlockChain() error {
 	// clear tables accounts
 	if err := accounts.RemoveTables(); err != nil {
 		return err
@@ -120,7 +70,7 @@ func (s *system) LoadBlockChain() error {
 func onLoadBlockChain(e event.Event) error {
 	logs.Notice("【onLoad】 blockChain", e.Data())
 
-	if err := systems.LoadBlockChain(); err != nil {
+	if err := systems.loadBlockChain(); err != nil {
 		return err
 	}
 
@@ -137,14 +87,14 @@ func onLoadBlockChain(e event.Event) error {
 func onReadyLoops(e event.Event) error {
 	logs.Notice("【onReady】 loops", e.Data())
 
-	myDelegates := systems.GetMyDelegates()
+	myDelegates := accounts.GetMyKeypairs()
 	if len(myDelegates) > 0 {
 		go func() {
 			for {
-				if err := systems.Loops(); err != nil {
+				if err := systems.loops(); err != nil {
 					panic(err)
 				}
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(3000 * time.Millisecond)
 			}
 		}()
 	} else {

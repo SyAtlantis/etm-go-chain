@@ -3,6 +3,7 @@ package modules
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"etm-go-chain/core"
 	"etm-go-chain/models"
 	"etm-go-chain/utils"
@@ -17,9 +18,11 @@ func init() {
 }
 
 type Blocks interface {
-	GetBlocks() []models.Block
+	GetBlocks(map[string]interface{}, int64, int64, string) ([]models.Block, error)
+	GetLastBlock() models.Block
 
-	generateBlock(utils.Keypair, int64) error
+	getBlockSlotData(int64, int64) (models.BlockData, error)
+	generateBlock(models.BlockData) error
 	processBlock(mb models.Block) error
 
 	loadBlocksOffset(offset int64, limit int64) error
@@ -31,18 +34,93 @@ type Blocks interface {
 
 type block struct {
 	models.Block
+	LastBlock models.Block
 }
 
 func NewBlocks() Blocks {
 	return &block{}
 }
 
-func (b *block) GetBlocks() []models.Block {
-	panic("implement me")
+func (b *block) GetBlocks(filter map[string]interface{}, limit int64, offset int64, order string) ([]models.Block, error) {
+	o := orm.NewOrm()
+	qb := o.QueryTable("block")
+	for k, v := range filter {
+		qb.Filter(k, v)
+	}
+	if limit > 0 {
+		qb.Limit(limit)
+	}
+	if offset > 0 {
+		qb.Offset(offset)
+	}
+	if order != "" {
+		qb.OrderBy(order)
+	}
+	var bs []models.Block
+	if _, err := qb.All(&bs); err != nil {
+		return bs, err
+	}
+	return bs, nil
 }
 
-func (b *block) generateBlock(keypair utils.Keypair, timestamp int64) error {
-	panic("implement me")
+func (b *block) GetLastBlock() models.Block {
+	return b.LastBlock
+}
+
+func (b *block) getBlockSlotData(height int64, slot int64) (models.BlockData, error) {
+	var bd models.BlockData
+	delegate, err := accounts.getConsensusDelegate(height, slot)
+	if err != nil {
+		return bd, err
+	}
+
+	myKeypairs := accounts.GetMyKeypairs()
+	selectDelegate := myKeypairs[delegate.Account.PublicKey]
+	if !selectDelegate.IsEmpty() {
+		bd.Keypair = selectDelegate
+	}
+	bd.Timestamp = slots.GetSlotTime(slot)
+
+	return bd, nil
+}
+
+func (b *block) generateBlock(bd models.BlockData) error {
+	var trList models.Trs
+	bd.Transactions = trList
+	bd.PreviousBlock = blocks.GetLastBlock()
+
+	var err error
+	var newBlock models.Block
+	if err = newBlock.Create(bd); err != nil {
+		return err
+	}
+	if newBlock.Id, err = newBlock.GetId(); err != nil {
+		return err
+	}
+	newBlock.Height = bd.PreviousBlock.Height + 1
+
+	var activeKeypairs []utils.Keypair
+	if activeKeypairs, err = accounts.getActiveDelegateKeypairs(newBlock.Height); err != nil {
+		return err
+	}
+	if len(activeKeypairs) <= 0 {
+		return errors.New("active keypairs should not be empty")
+	}
+
+	// TODO get signs
+	var sign models.Sign
+	if sign, err = accounts.createSigns(activeKeypairs, newBlock); err != nil {
+		return err
+	}
+	if sign.HasEnoughSigns() {
+		if err := blocks.processBlock(newBlock); err != nil {
+			return err
+		}
+	} else{
+		// TODO createPropose
+	}
+
+	return nil
 }
 
 func (b *block) processBlock(mb models.Block) error {
@@ -88,15 +166,12 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 					blockItem.Transactions = trList
 				}
 
-				if systems.GetLastBlock() != nil && systems.GetLastBlock().Height != 0 {
+				if !b.LastBlock.IsEmpty() && b.LastBlock.Height != 0 {
 					if err := blocks.verifyBlock(*blockItem); err != nil {
 						return err
 					}
 				}
 				if err := blocks.applyBlock(*blockItem); err != nil {
-					return err
-				}
-				if err := systems.SetLastBlock(blockItem); err != nil {
 					return err
 				}
 			}
@@ -146,42 +221,11 @@ func (b *block) saveBlock(mb models.Block) error {
 }
 
 func (b *block) applyBlock(mb models.Block) error {
-	// get unconfirmedList
-	// undo unconfirmedList
-	// do apply
-
-	//var err error
-	//appliedTrIds := set.New(set.ThreadSafe)
 	trs := mb.Transactions
 	if err := trs.Apply(); err != nil {
 		return err
 	}
-	//for i, tr := range trs {
-	//	logs.Debug(i,tr.Id)
-	//	if tr.SAccount, err = accounts.loadSender(tr.Sender); err != nil {
-	//		return err
-	//	}
-	//
-	//	if tr.Recipient != "" {
-	//		if tr.RAccount, err = accounts.loadRecipient(tr.Recipient); err != nil {
-	//			return err
-	//		}
-	//	}
-	//
-	//	//if err = transactions.applyUnconfirmed(*tr); err != nil {
-	//	//	return err
-	//	//}
-	//
-	//	if err = tr.Apply(); err != nil {
-	//		return err
-	//	}
-	//
-	//	//if err = transactions.removeUnconfirmed(*tr); err != nil {
-	//	//	return err
-	//	//}
-	//
-	//	appliedTrIds.Add(tr.Id)
-	//}
+	b.LastBlock = mb
 
 	jsonBytes, err := json.MarshalIndent(mb, "", "    ")
 	if err != nil {

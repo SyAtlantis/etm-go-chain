@@ -1,5 +1,7 @@
 package modules
 
+import "etm-go-chain/utils"
+
 var (
 	accounts     Accounts
 	blocks       Blocks
@@ -15,3 +17,5 @@ func InitModules() {
 	systems = NewSystems()
 	transactions = NewTransactions()
 }
+
+var slots = utils.NewSlots()
