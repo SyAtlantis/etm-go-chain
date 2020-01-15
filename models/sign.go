@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"etm-go-chain/utils"
-	"fmt"
 	"reflect"
 )
 
@@ -37,7 +37,7 @@ func (s *Sign) Create(keypairs []utils.Keypair, block Block) error {
 
 	for _, v := range keypairs {
 		sign := make(map[string]string)
-		publicKey := fmt.Sprintf("%x", v.PublicKey)
+		publicKey := hex.EncodeToString(v.PublicKey)
 		var err error
 		if sign[publicKey], err = s.GetSignature(v); err != nil {
 			return err
@@ -68,7 +68,7 @@ func (s *Sign) GetId() (string, error) {
 func (s *Sign) GetSignature(keypair utils.Keypair) (string, error) {
 	hash, err := s.GetHash()
 	sign := ed.Sign(hash[:], keypair)
-	return fmt.Sprintf("%x", sign), err
+	return hex.EncodeToString(sign), err
 }
 
 func (s *Sign) VerifySignature() (bool error) {
@@ -76,5 +76,6 @@ func (s *Sign) VerifySignature() (bool error) {
 }
 
 func (s *Sign) HasEnoughSigns() bool {
-	panic("implement me")
+	slots := utils.NewSlots()
+	return len(s.Signatures) > slots.Delegates*2/3
 }

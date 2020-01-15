@@ -2,12 +2,10 @@ package modules
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"etm-go-chain/core"
 	"etm-go-chain/models"
-	"etm-go-chain/utils"
-	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/gookit/event"
@@ -26,8 +24,8 @@ type Blocks interface {
 	processBlock(mb models.Block) error
 
 	loadBlocksOffset(offset int64, limit int64) error
-	verifyBlock(mb models.Block) error
 	verifyGenesisBlock(mb models.Block) error
+	verifyBlock(mb models.Block) error
 	saveBlock(mb models.Block) error
 	applyBlock(mb models.Block) error
 }
@@ -99,24 +97,15 @@ func (b *block) generateBlock(bd models.BlockData) error {
 	}
 	newBlock.Height = bd.PreviousBlock.Height + 1
 
-	var activeKeypairs []utils.Keypair
-	if activeKeypairs, err = accounts.getActiveDelegateKeypairs(newBlock.Height); err != nil {
-		return err
-	}
-	if len(activeKeypairs) <= 0 {
-		return errors.New("active keypairs should not be empty")
-	}
-
-	// TODO get signs
 	var sign models.Sign
-	if sign, err = accounts.createSigns(activeKeypairs, newBlock); err != nil {
+	if sign, err = accounts.getMySigns(newBlock); err != nil {
 		return err
 	}
 	if sign.HasEnoughSigns() {
 		if err := blocks.processBlock(newBlock); err != nil {
 			return err
 		}
-	} else{
+	} else {
 		// TODO createPropose
 	}
 
@@ -124,20 +113,17 @@ func (b *block) generateBlock(bd models.BlockData) error {
 }
 
 func (b *block) processBlock(mb models.Block) error {
-	//trs := b.Transactions
-	//for _, tr := range trs {
-	//	err := transactions.ProcessTransaction(*tr)
-	//	if err != nil {
-	//
-	//	}
-	//	logs.Info(tr)
-	//}
+	if err := b.verifyBlock(mb); err != nil {
+		return err
+	}
+	if err := b.saveBlock(mb); err != nil {
+		return err
+	}
+	if err := b.applyBlock(mb); err != nil {
+		return err
+	}
 
-	var err error
-	err = b.verifyBlock(mb)
-	err = b.saveBlock(mb)
-
-	return err
+	return nil
 }
 
 func (b *block) loadBlocksOffset(offset int64, limit int64) error {
@@ -182,12 +168,6 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 	return nil
 }
 
-func (b *block) verifyBlock(mb models.Block) error {
-	var err error
-	logs.Debug("verify block")
-	return err
-}
-
 func (b *block) verifyGenesisBlock(mb models.Block) error {
 	var payloadLength int
 	hash := sha256.New()
@@ -200,7 +180,7 @@ func (b *block) verifyGenesisBlock(mb models.Block) error {
 		payloadLength += len(bs)
 		hash.Write(bs)
 	}
-	payloadHash := fmt.Sprintf("%x", hash.Sum([]byte{}))
+	payloadHash := hex.EncodeToString(hash.Sum([]byte{}))
 	id, err := mb.GetId()
 
 	if payloadLength != mb.PayloadLength || payloadHash != mb.PayloadHash || id != mb.Id || err != nil {
@@ -208,6 +188,12 @@ func (b *block) verifyGenesisBlock(mb models.Block) error {
 	}
 
 	return nil
+}
+
+func (b *block) verifyBlock(mb models.Block) error {
+	var err error
+	logs.Debug("verify block")
+	return err
 }
 
 func (b *block) saveBlock(mb models.Block) error {

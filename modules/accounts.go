@@ -6,7 +6,6 @@ import (
 	"errors"
 	"etm-go-chain/core"
 	"etm-go-chain/utils"
-	"fmt"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/gookit/event"
@@ -29,7 +28,7 @@ type Accounts interface {
 	getActiveDelegateKeypairs(height int64) ([]utils.Keypair, error)
 	getConsensusDelegate(height int64, slot int64) (models.Delegate, error)
 	getDelegateIndex(id string, slot int64, length int) int
-	createSigns(keypairs []utils.Keypair, block models.Block) (models.Sign, error)
+	getMySigns(block models.Block) (models.Sign, error)
 }
 
 type account struct {
@@ -54,40 +53,40 @@ func (a account) RemoveTables() error {
 	return err
 }
 
-func (a *account) loadSender(sender string) (models.Account, error) {
-	acc := models.Account{}
-	if sender == "" {
-		return acc, errors.New("no sender to load")
-	}
-
-	Address := utils.Address{}
-	pub, err := hex.DecodeString(sender)
-	if err != nil {
-		return acc, err
-	}
-	acc.Address = Address.GenerateAddress(pub)
-
-	if acc2, err := acc.GetAccount(); err == nil {
-		acc2.PublicKey = sender
-		return acc2, nil
-	}
-
-	acc.PublicKey = sender
-	return acc, acc.SetAccount()
-}
-
-func (a *account) loadRecipient(recipient string) (models.Account, error) {
-	acc := models.Account{}
-	if recipient == "" {
-		return acc, errors.New("no recipient to load")
-	}
-
-	acc.Address = recipient
-	if a, err := acc.GetAccount(); err == nil {
-		return a, nil
-	}
-	return acc, acc.SetAccount()
-}
+//func (a *account) loadSender(sender string) (models.Account, error) {
+//	acc := models.Account{}
+//	if sender == "" {
+//		return acc, errors.New("no sender to load")
+//	}
+//
+//	Address := utils.Address{}
+//	pub, err := hex.DecodeString(sender)
+//	if err != nil {
+//		return acc, err
+//	}
+//	acc.Address = Address.GenerateAddress(pub)
+//
+//	if acc2, err := acc.GetAccount(); err == nil {
+//		acc2.PublicKey = sender
+//		return acc2, nil
+//	}
+//
+//	acc.PublicKey = sender
+//	return acc, acc.SetAccount()
+//}
+//
+//func (a *account) loadRecipient(recipient string) (models.Account, error) {
+//	acc := models.Account{}
+//	if recipient == "" {
+//		return acc, errors.New("no recipient to load")
+//	}
+//
+//	acc.Address = recipient
+//	if a, err := acc.GetAccount(); err == nil {
+//		return a, nil
+//	}
+//	return acc, acc.SetAccount()
+//}
 
 func (a *account) bindMyKeypairs(secrets []string) error {
 	myKeypairs := make(map[string]utils.Keypair)
@@ -99,7 +98,7 @@ func (a *account) bindMyKeypairs(secrets []string) error {
 		ed := utils.Ed{}
 		hash := sha256.Sum256([]byte(s))
 		keypair := ed.MakeKeypair(hash[:])
-		pub := fmt.Sprintf("%x", keypair.PublicKey)
+		pub := hex.EncodeToString(keypair.PublicKey)
 		myKeypairs[pub] = keypair
 	}
 	a.MyKeypairs = myKeypairs
@@ -154,16 +153,24 @@ func (a *account) getConsensusDelegate(height int64, slot int64) (d models.Deleg
 
 func (a *account) getDelegateIndex(id string, slot int64, length int) int {
 	hash := sha256.Sum256([]byte(id))
-	h := fmt.Sprintf("%x", hash)
+	h := hex.EncodeToString(hash[:])
 	index := utils.Chaos(h, slot, length)
 	return index
 }
 
-func (a *account) createSigns(keypairs []utils.Keypair, block models.Block) (models.Sign, error) {
+func (a *account) getMySigns(block models.Block) (models.Sign, error) {
 	var sign models.Sign
-	if err := sign.Create(keypairs, block); err != nil {
+	activeKeypairs, err := accounts.getActiveDelegateKeypairs(block.Height)
+	if err != nil {
 		return sign, err
 	}
+	if len(activeKeypairs) <= 0 {
+		return sign, errors.New("active keypairs should not be empty")
+	}
+	if err := sign.Create(activeKeypairs, block); err != nil {
+		return sign, err
+	}
+
 	return sign, nil
 }
 

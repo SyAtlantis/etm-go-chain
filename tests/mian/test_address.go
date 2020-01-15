@@ -2,6 +2,7 @@ package mian
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"etm-go-chain/utils"
 	"fmt"
 )
@@ -13,8 +14,8 @@ func main() {
 	ed := utils.Ed{}
 	keypair := ed.MakeKeypair(hash[:])
 	fmt.Println(keypair)
-	fmt.Println(fmt.Sprintf("%x", keypair.PublicKey))
-	fmt.Println(fmt.Sprintf("%x", keypair.PrivateKey))
+	fmt.Println(hex.EncodeToString(keypair.PublicKey))
+	fmt.Println(hex.EncodeToString(keypair.PrivateKey))
 	
 	//sign := ed.Sign(hash[:],keypair)
 	//fmt.Println(fmt.Sprintf("%x", sign))

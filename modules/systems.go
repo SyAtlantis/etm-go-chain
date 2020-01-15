@@ -32,8 +32,6 @@ func (s *system) GetVersion() string {
 }
 
 func (s *system) loops() error {
-	logs.Debug("in loops")
-
 	currentSlot := slots.GetSlotNumber()
 	lastBlock := blocks.GetLastBlock()
 	if currentSlot == lastBlock.Timestamp {
@@ -94,7 +92,7 @@ func onReadyLoops(e event.Event) error {
 				if err := systems.loops(); err != nil {
 					panic(err)
 				}
-				time.Sleep(3000 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 			}
 		}()
 	} else {

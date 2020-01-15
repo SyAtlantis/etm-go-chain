@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"etm-go-chain/utils"
-	"fmt"
 	"github.com/astaxie/beego/orm"
 	"reflect"
 )
@@ -56,18 +55,18 @@ type iTransaction interface {
 }
 
 type Transaction struct {
-	Id        string    `json:"id" orm:"pk;"`
-	Type      uint8     `json:"type"`
-	BlockId   *Block    `json:"blockId" orm:"rel(fk);column(block_id)"`
-	Fee       int64     `json:"fee"`
-	Amount    int64     `json:"amount"`
-	Timestamp int64     `json:"timestamp"`
-	Sender    string    `json:"sender"`
-	Recipient string    `json:"recipient"`
-	Args      string    `json:"args"`
-	Signature string    `json:"signature"`
-	SAccount  *Account   `json:"sAccount" orm:"-"`
-	RAccount  *Account   `json:"RAccount" orm:"-"`
+	Id        string   `json:"id" orm:"pk;"`
+	Type      uint8    `json:"type"`
+	BlockId   *Block   `json:"blockId" orm:"rel(fk);column(block_id)"`
+	Fee       int64    `json:"fee"`
+	Amount    int64    `json:"amount"`
+	Timestamp int64    `json:"timestamp"`
+	Sender    string   `json:"sender"`
+	Recipient string   `json:"recipient"`
+	Args      string   `json:"args"`
+	Signature string   `json:"signature"`
+	SAccount  *Account `json:"sAccount" orm:"-"`
+	RAccount  *Account `json:"RAccount" orm:"-"`
 }
 
 type TrData struct {
@@ -224,13 +223,13 @@ func (t *Transaction) GetHash() ([32]byte, error) {
 
 func (t *Transaction) GetId() (string, error) {
 	hash, err := t.GetHash()
-	return fmt.Sprintf("%x", hash), err
+	return hex.EncodeToString(hash[:]), err
 }
 
 func (t *Transaction) GetSignature(keypair utils.Keypair) (string, error) {
 	hash, err := t.GetHash()
 	sign := ed.Sign(hash[:], keypair)
-	return fmt.Sprintf("%x", sign), err
+	return hex.EncodeToString(sign), err
 }
 
 func (t *Transaction) VerifySignature() (bool error) {

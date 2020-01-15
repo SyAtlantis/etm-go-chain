@@ -47,7 +47,7 @@ func (trs Trs) Apply() error {
 	trs.Sort()
 
 	o := orm.NewOrm()
-	if _, err := o.Raw("PRAGMA synchronous = OFF").Exec(); err != nil {
+	if _, err := o.Raw("PRAGMA synchronous = OFF; ").Exec(); err != nil {
 		return err
 	}
 

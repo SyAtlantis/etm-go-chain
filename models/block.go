@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"etm-go-chain/utils"
-	"fmt"
 	"github.com/astaxie/beego/orm"
 	"reflect"
 )
@@ -96,12 +95,12 @@ func (b *Block) Create(data BlockData) error {
 	b.TotalAmount = totalAmount
 	b.TotalFee = totalFee
 	b.Reward = reward
-	b.PayloadHash = fmt.Sprintf("%x", payloadHash.Sum([]byte{}))
+	b.PayloadHash = hex.EncodeToString(payloadHash.Sum([]byte{}))
 	b.Timestamp = data.Timestamp
 	b.NumberOfTransactions = len(blockTrs)
 	b.PayloadLength = size
 	b.PreviousBlock = data.PreviousBlock.Id
-	b.Generator = fmt.Sprintf("%x", data.Keypair.PublicKey)
+	b.Generator = hex.EncodeToString(data.Keypair.PublicKey)
 	b.Transactions = blockTrs
 
 	if b.BlockSignature, err = b.GetSignature(data.Keypair); err != nil {
@@ -157,13 +156,13 @@ func (b *Block) GetHash() ([32]byte, error) {
 
 func (b *Block) GetId() (string, error) {
 	hash, err := b.GetHash()
-	return fmt.Sprintf("%x", hash), err
+	return hex.EncodeToString(hash[:]), err
 }
 
 func (b *Block) GetSignature(keypair utils.Keypair) (string, error) {
 	hash, err := b.GetHash()
 	sign := ed.Sign(hash[:], keypair)
-	return fmt.Sprintf("%x", sign), err
+	return hex.EncodeToString(sign), err
 }
 
 func (b *Block) VerifySignature() (bool error) {
@@ -199,9 +198,11 @@ func (b *Block) SetBlock() error {
 		}
 
 		trs := b.Transactions
-		if _, err := o.InsertMulti(20, trs); err != nil {
-			rollback()
-			return err
+		if len(trs) > 0 {
+			if _, err := o.InsertMulti(20, trs); err != nil {
+				rollback()
+				return err
+			}
 		}
 	}
 

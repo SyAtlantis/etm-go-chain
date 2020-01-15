@@ -3,7 +3,6 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"github.com/anaskhan96/base58check"
 	"golang.org/x/crypto/ripemd160"
 	"strings"
@@ -36,7 +35,7 @@ func (addr *Address) GenerateAddress(publicKey []byte) string {
 	ripemd160Inst.Write(sha256Bytes)
 	ripemd160Bytes := ripemd160Inst.Sum(nil)
 
-	address, err := base58check.Encode("", fmt.Sprintf("%x", ripemd160Bytes))
+	address, err := base58check.Encode("", hex.EncodeToString(ripemd160Bytes))
 	if err != nil {
 		return ""
 	}
