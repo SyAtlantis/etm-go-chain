@@ -47,7 +47,20 @@ func (trs Trs) Apply() error {
 	trs.Sort()
 
 	o := orm.NewOrm()
-	if _, err := o.Raw("PRAGMA synchronous = OFF; ").Exec(); err != nil {
+	if _, err := o.Raw("PRAGMA synchronous=OFF").Exec(); err != nil {
+		return err
+	}
+	//if _, err := o.Raw("PRAGMA journal_mode=MEMORY").Exec(); err != nil {
+	//	return err
+	//}
+
+	var rollback = func() {
+		if err := o.Rollback(); err != nil {
+			panic(err)
+		}
+	}
+	if err := o.Begin(); err != nil {
+		rollback()
 		return err
 	}
 
@@ -69,11 +82,13 @@ func (trs Trs) Apply() error {
 
 		// 获取或者新建交易的account
 		if tr.Sender == "" {
+			rollback()
 			return errors.New("no sender to load")
 		}
 		Address := utils.Address{}
 		addr, err := Address.GenerateAddressByStr(tr.Sender)
 		if err != nil {
+			rollback()
 			return err
 		}
 
@@ -82,6 +97,7 @@ func (trs Trs) Apply() error {
 			PublicKey: tr.Sender,
 		}
 		if tr.SAccount, err = readOrCreate(qa.Filter("Address", addr), ia, s); err != nil {
+			rollback()
 			return err
 		}
 
@@ -90,21 +106,25 @@ func (trs Trs) Apply() error {
 				Address: tr.Recipient,
 			}
 			if tr.RAccount, err = readOrCreate(qa.Filter("Address", tr.Recipient), ia, r); err != nil {
+				rollback()
 				return err
 			}
 		}
 
 		// 更新交易数据到account
 		if err := tr.Apply(); err != nil {
+			rollback()
 			return err
 		}
 
 		// 更新到数据库
 		if err := updateOrInsert(qa.Filter("Address", addr), ia, tr.SAccount); err != nil {
+			rollback()
 			return err
 		}
 		if tr.Recipient != "" {
 			if err := updateOrInsert(qa.Filter("Address", tr.Recipient), ia, tr.RAccount); err != nil {
+				rollback()
 				return err
 			}
 		}
@@ -112,22 +132,25 @@ func (trs Trs) Apply() error {
 		// 更新对应的 Delegate，Vote，Locks
 		if tr.SAccount.Delegate != nil {
 			if err := updateOrInsert(qd.Filter("TransactionId", tr.Id), id, tr.SAccount.Delegate); err != nil {
+				rollback()
 				return err
 			}
 		}
 		if tr.SAccount.Vote != nil {
 			if err := updateOrInsert(qv.Filter("TransactionId", tr.Id), iv, tr.SAccount.Vote); err != nil {
+				rollback()
 				return err
 			}
 		}
 		if tr.SAccount.Locks != nil {
 			if err := updateOrInsert(ql.Filter("TransactionId", tr.Id), il, tr.SAccount.Locks[0]); err != nil {
+				rollback()
 				return err
 			}
 		}
 	}
 
-	return nil
+	return o.Commit()
 }
 
 func readOrCreate(qs orm.QuerySeter, i orm.Inserter, a *Account) (*Account, error) {
