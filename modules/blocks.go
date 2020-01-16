@@ -3,7 +3,6 @@ package modules
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"etm-go-chain/core"
 	"etm-go-chain/models"
 	"github.com/astaxie/beego/logs"
@@ -135,34 +134,25 @@ func (b *block) loadBlocksOffset(offset int64, limit int64) error {
 	// set last block
 
 	o := orm.NewOrm()
-	qb := o.QueryTable("block")
+	qb := o.QueryTable("block").Offset(offset).Limit(limit).OrderBy("height")
+	var blockList []*models.Block
+	if n, err := qb.All(&blockList); err == nil && n > 0 {
+		for _, blockItem := range blockList {
+			var trList models.Trs
+			qt := o.QueryTable("transaction")
+			if n, err := qt.Filter("block_id", blockItem.Id).RelatedSel("BlockId").All(&trList); err == nil && n > 0 {
+				blockItem.Transactions = trList
+			}
 
-	count, err := qb.Count()
-	if err != nil {
-		return err
-	}
-	for count > offset {
-		qb.Offset(offset).Limit(limit).OrderBy("height")
-		var blockList []*models.Block
-		if n, err := qb.All(&blockList); err == nil && n > 0 {
-			for _, blockItem := range blockList {
-				var trList models.Trs
-				qt := o.QueryTable("transaction")
-				if n, err := qt.Filter("block_id", blockItem.Id).RelatedSel("BlockId").All(&trList); err == nil && n > 0 {
-					blockItem.Transactions = trList
-				}
-
-				if !b.LastBlock.IsEmpty() && b.LastBlock.Height != 0 {
-					if err := blocks.verifyBlock(*blockItem); err != nil {
-						return err
-					}
-				}
-				if err := blocks.applyBlock(*blockItem); err != nil {
+			if !b.LastBlock.IsEmpty() && b.LastBlock.Height != 0 {
+				if err := blocks.verifyBlock(*blockItem); err != nil {
 					return err
 				}
 			}
+			if err := blocks.applyBlock(*blockItem); err != nil {
+				return err
+			}
 		}
-		offset += limit
 	}
 
 	return nil
@@ -213,11 +203,9 @@ func (b *block) applyBlock(mb models.Block) error {
 	}
 	b.LastBlock = mb
 
-	jsonBytes, err := json.MarshalIndent(mb, "", "    ")
-	if err != nil {
+	if err := systems.tick(mb); err != nil {
 		return err
 	}
-	logs.Debug("applied block:", string(jsonBytes))
 
 	return nil
 }

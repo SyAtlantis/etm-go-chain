@@ -176,7 +176,6 @@ func (b *Block) GetBlock() (Block, error) {
 }
 
 func (b *Block) SetBlock() error {
-	//var err error
 	o := orm.NewOrm()
 
 	var rollback = func() {

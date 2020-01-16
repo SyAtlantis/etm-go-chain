@@ -19,3 +19,5 @@ func InitModules() {
 }
 
 var slots = utils.NewSlots()
+
+var ed = utils.Ed{}

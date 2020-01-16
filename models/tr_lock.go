@@ -11,7 +11,7 @@ type TrLock struct {
 
 func init() {
 	tr := TrLock{}
-	RegisterTrs(LOCK, &tr)
+	RegisterSubTr(LOCK, &tr)
 }
 
 func (lock *TrLock) create(tr *Transaction, data TrData) error {

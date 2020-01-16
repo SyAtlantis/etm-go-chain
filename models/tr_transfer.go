@@ -7,7 +7,7 @@ type TrTransfer struct {
 
 func init() {
 	tr := TrTransfer{}
-	RegisterTrs(TRANSFER, &tr)
+	RegisterSubTr(TRANSFER, &tr)
 }
 
 func (transfer *TrTransfer) create(tr *Transaction, data TrData) error {

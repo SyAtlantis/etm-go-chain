@@ -5,7 +5,7 @@ type TrUndelegate struct {
 
 func init() {
 	tr := TrUndelegate{}
-	RegisterTrs(UNDELEGATE, &tr)
+	RegisterSubTr(UNDELEGATE, &tr)
 }
 
 func (undelegate *TrUndelegate) create(tr *Transaction, data TrData) error {

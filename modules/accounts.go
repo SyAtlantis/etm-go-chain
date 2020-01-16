@@ -59,7 +59,6 @@ func (a *account) bindMyKeypairs(secrets []string) error {
 	for _, s := range secrets {
 		// TODO 需要判断secret是否合法
 
-		ed := utils.Ed{}
 		hash := sha256.Sum256([]byte(s))
 		keypair := ed.MakeKeypair(hash[:])
 		pub := hex.EncodeToString(keypair.PublicKey)

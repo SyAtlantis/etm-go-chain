@@ -11,7 +11,7 @@ type TrDelegate struct {
 
 func init() {
 	tr := TrDelegate{}
-	RegisterTrs(DELEGATE, &tr)
+	RegisterSubTr(DELEGATE, &tr)
 }
 
 func (delegate *TrDelegate) create(tr *Transaction, data TrData) error {

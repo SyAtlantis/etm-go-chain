@@ -9,7 +9,7 @@ type TrUnvote struct {
 
 func init() {
 	tr := TrVote{}
-	RegisterTrs(UNVOTE, &tr)
+	RegisterSubTr(UNVOTE, &tr)
 }
 
 func (unvote *TrUnvote) create(tr *Transaction, data TrData) error {

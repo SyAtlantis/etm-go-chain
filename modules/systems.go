@@ -1,8 +1,10 @@
 package modules
 
 import (
+	"encoding/json"
 	"etm-go-chain/models"
 	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
 	"github.com/gookit/event"
 	"time"
 )
@@ -16,6 +18,9 @@ type Systems interface {
 	GetVersion() string
 
 	loops() error
+	calcRound(height int64) int64
+	tick(block models.Block) error
+	backwardTick(block models.Block) error
 	loadBlockChain() error
 }
 
@@ -51,15 +56,63 @@ func (s *system) loops() error {
 	return nil
 }
 
+func (s *system) calcRound(height int64) int64 {
+	var next int64
+	if height%int64(slots.RoundBlocks) > 0 {
+		next = 1
+	} else {
+		next = 0
+	}
+	return height/int64(slots.RoundBlocks) + next
+}
+
+func (s *system) tick(block models.Block) error {
+	// TODO tick
+	// 处理出块奖励 、分红
+	// 处理换轮
+	logs.Debug("TODO tick")
+
+	jsonBytes, err := json.MarshalIndent(block, "", "    ")
+	if err != nil {
+		return err
+	}
+	logs.Debug("tick block completed:", string(jsonBytes))
+
+	return nil
+}
+
+func (s *system) backwardTick(block models.Block) error {
+	// TODO backward tick
+	logs.Debug("TODO backward tick")
+	return nil
+}
+
 func (s *system) loadBlockChain() error {
-	// clear tables accounts
-	if err := accounts.RemoveTables(); err != nil {
+	o := orm.NewOrm()
+	qb := o.QueryTable("block")
+	count, err := qb.Count()
+	if err != nil {
 		return err
 	}
 
+	var offset int64 = 0
+	var limit int64 = 1000
+	if count <= 1 {
+		// clear tables accounts
+		if err := accounts.RemoveTables(); err != nil {
+			return err
+		}
+	} else {
+		offset = count - 1
+		limit = 1
+	}
+
 	// load blocks offset
-	if err := blocks.loadBlocksOffset(0, 1000); err != nil {
-		return err
+	for count > offset {
+		if err := blocks.loadBlocksOffset(offset, limit); err != nil {
+			return err
+		}
+		offset += limit
 	}
 
 	return nil

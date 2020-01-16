@@ -127,7 +127,7 @@ type SubTr interface {
 
 var trTypes = make(map[uint8]SubTr)
 
-func RegisterTrs(trType uint8, tr SubTr) {
+func RegisterSubTr(trType uint8, tr SubTr) {
 	trTypes[trType] = tr
 }
 

@@ -7,7 +7,7 @@ type TrUnlock struct {
 
 func init() {
 	tr := TrUnlock{}
-	RegisterTrs(UNLOCK, &tr)
+	RegisterSubTr(UNLOCK, &tr)
 }
 
 func (unlock *TrUnlock) create(tr *Transaction, data TrData) error {

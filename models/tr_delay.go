@@ -7,7 +7,7 @@ type TrDelay struct {
 
 func init() {
 	tr := TrDelay{}
-	RegisterTrs(DELAY, &tr)
+	RegisterSubTr(DELAY, &tr)
 }
 
 func (delay *TrDelay) create(tr *Transaction, data TrData) error {
